@@ -26,9 +26,17 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Anfitrião — Concierge OS" },
+      { title: "Anfitrião Concierge OS" },
       { name: "description", content: "Painel omnichannel de atendimento ao cliente para o mercado de luxo." },
       { name: "theme-color", content: "#0f172a" },
+      { property: "og:title", content: "Anfitrião Concierge OS" },
+      { name: "twitter:title", content: "Anfitrião Concierge OS" },
+      { property: "og:description", content: "Painel omnichannel de atendimento ao cliente para o mercado de luxo." },
+      { name: "twitter:description", content: "Painel omnichannel de atendimento ao cliente para o mercado de luxo." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a43b3c3b-bf2c-4e4e-a851-13fd89f5b3b9/id-preview-8b2cf238--570deff5-520e-4727-8914-8635b66d97f9.lovable.app-1777989307839.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a43b3c3b-bf2c-4e4e-a851-13fd89f5b3b9/id-preview-8b2cf238--570deff5-520e-4727-8914-8635b66d97f9.lovable.app-1777989307839.png" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:type", content: "website" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
