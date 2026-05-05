@@ -30,3 +30,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Infra (VPS) — segredos e dados locais
+infra/.env
+infra/volumes/
+infra/backups/
