@@ -1,55 +1,89 @@
 ## Objetivo
 
-Estender `/inbox` (mock-only) com fila offline persistente, anexos, estados por mensagem, histórico de automações e botão "Tentar novamente".
+Substituir os mocks de `src/services/` por implementações reais (Chatwoot, Dify, n8n) com **fallback automático para mock** quando as variáveis de ambiente não estiverem definidas — assim o preview na Vercel continua funcionando antes da VPS estar no ar. Entregar também o **workflow n8n pronto para importar** e o **`.env.example` do front**.
 
 ## Arquivos a alterar / criar
 
-**`src/services/types.ts`** — adicionar tipos:
-- `MessageStatus = "sending" | "queued" | "delivered" | "error"`
-- `Attachment = { id; name; size; type; url; kind: "image" | "file" }`
-- `AutomationEvent = { id; type: "handover" | "ai_reply" | "reverse_logistics" | "other"; title; description; timestamp; result: "success" | "error" | "pending"; payload?: unknown }`
-- Estender `Message` com `status`, `attachments?`, `error?`
-- Estender `CustomerContext` com `automations: AutomationEvent[]`
+### 1. `src/services/chatwootService.ts` (substituir)
+- Lê `VITE_CHATWOOT_URL`, `VITE_CHATWOOT_USER_TOKEN`, `VITE_CHATWOOT_ACCOUNT_ID`, `VITE_CHATWOOT_INBOX_ID`.
+- Flag `isLive` decide entre API real e mock.
+- Helpers `api(path)`, `headers()`, `http<T>()`.
+- Mappers `CwConversation → Conversation`, `CwMessage → Message`, derivando `sentiment` de labels e `aiHandling`/`ltv`/`avg_ticket` de `custom_attributes`.
+- `listConversations`: `GET /conversations?status=open&assignee_type=me`.
+- `getConversation`: `GET /conversations/:id` + `/messages`.
+- `sendMessage`: `POST /conversations/:id/messages` (JSON) ou multipart com `attachments[]` quando houver anexos (faz `fetch(a.url).blob()` para subir blob real do object URL).
+- `assignAgent`: `POST /conversations/:id/assignments`.
+- `listAutomations`: stub (Chatwoot não expõe nativamente — virá via custom attributes/n8n).
 
-**`src/services/chatwootService.ts`** — `sendMessage` agora aceita `{ content, attachments }`, falha aleatoriamente (~25%) e devolve `{ id, deliveredAt }` em caso de sucesso (para simular acks reais).
+### 2. `src/services/difyService.ts` (substituir)
+- Lê `VITE_DIFY_URL`, `VITE_DIFY_API_KEY`, `VITE_DIFY_DATASET_ID`.
+- `listKnowledgeDocuments`: `GET /v1/datasets/:id/documents`.
+- `uploadDocument`: `POST /v1/datasets/:id/document/create-by-file` (multipart, `process_rule: { mode: "automatic" }`).
+- `removeDocument`: `DELETE /v1/datasets/:id/documents/:docId`.
+- `listQAPairs` / `addQAPair`: usa endpoints de **Q&A segments** ou cai em mock se o dataset não for do tipo Q&A.
+- `askDify(query, conversationId?)`: novo helper opcional para a tela `/brain` chamar `POST /v1/chat-messages` (response_mode `blocking`).
 
-**`src/mocks/data.ts`** — incluir 2 `AutomationEvent` por cliente (handover + ai_reply) com payloads exemplares.
+### 3. `src/services/n8nService.ts` (substituir)
+- Lê `VITE_N8N_WEBHOOK_HANDOFF`, `VITE_N8N_WEBHOOK_REVERSE_LOGISTICS`.
+- `triggerHandoff(conversationId)`: `POST` para o webhook com `{ conversationId, source: "anfitriao", agent }`.
+- `triggerReverseLogistics(orderId)`: idem.
+- Sem token (webhooks n8n são autorizados por URL secreta) — mas suporta header opcional `X-Webhook-Token` se `VITE_N8N_WEBHOOK_TOKEN` estiver definido.
 
-**`src/stores/outboxStore.ts`** (novo) — Zustand com `persist`:
-- `OutboxItem { id; conversationId; content; attachmentMeta[]; attempts; lastError?; createdAt }`
-- Ações: `enqueue`, `remove`, `incrementAttempt`, `setError`
-- Apenas metadados de anexos persistem (arquivos reais somem após reload — mensagem mantém status "queued" com aviso).
+### 4. `.env.example` (criar na raiz do projeto)
+Lista todas as `VITE_*` necessárias, com comentário do que cada uma é e onde obter:
+```
+VITE_CHATWOOT_URL=https://chat.suaempresa.com.br
+VITE_CHATWOOT_USER_TOKEN=          # Profile Settings → Access Token
+VITE_CHATWOOT_ACCOUNT_ID=1
+VITE_CHATWOOT_INBOX_ID=1
+VITE_DIFY_URL=https://dify.suaempresa.com.br
+VITE_DIFY_API_KEY=                 # App → API Access → Service API key
+VITE_DIFY_DATASET_ID=              # Knowledge → Settings
+VITE_N8N_WEBHOOK_HANDOFF=https://n8n.suaempresa.com.br/webhook/handoff
+VITE_N8N_WEBHOOK_REVERSE_LOGISTICS=https://n8n.suaempresa.com.br/webhook/reverse-logistics
+VITE_N8N_WEBHOOK_TOKEN=            # opcional, validado dentro do workflow
+```
+Instrução: copiar para a Vercel em **Settings → Environment Variables** (escopos Production + Preview).
 
-**`src/hooks/useOutboxFlusher.ts`** (novo) — escuta `online`/`offline`, dispara flush a cada ~15s e ao voltar online; chama `chatwootService.sendMessage`; em sucesso, remove do outbox e atualiza status da mensagem no `inboxStore` para `delivered`; em erro, incrementa tentativas com backoff. Toasts: "Conexão restaurada", "Mensagem reenviada".
+### 5. `n8n-workflows/whatsapp-rag-chatwoot.json` (criar)
+Workflow completo, exportado no formato do n8n, contendo nós:
+1. **Webhook** `POST /webhook/whatsapp` (recebe payload da Evolution API).
+2. **Function** "Normalize" — extrai `from`, `text`, `instanceName`, `messageId`.
+3. **HTTP Request** "Find or create Chatwoot contact" — `POST /public/api/v1/inboxes/:inbox_identifier/contacts` (canal API).
+4. **HTTP Request** "Find or create conversation" — `POST .../contacts/:source_id/conversations`.
+5. **HTTP Request** "Push incoming message" — `POST .../conversations/:id/messages` (`message_type: incoming`).
+6. **IF** "AI handling?" — verifica `custom_attributes.ai_handling !== false`.
+7. **HTTP Request** "Ask Dify" — `POST {DIFY_URL}/v1/chat-messages` com `inputs`, `query`, `user`.
+8. **HTTP Request** "Reply via Evolution" — `POST {EVOLUTION_URL}/message/sendText/:instance` com `apikey` header.
+9. **HTTP Request** "Log AI message in Chatwoot" — `message_type: outgoing`, `content_attributes: { ai: true, reasoning }`.
+10. Branch alternativo (handover): grava nota privada `[automation] handover` na conversa.
 
-**`src/stores/inboxStore.ts`** — adicionar:
-- `addOptimisticMessage(conversationId, message)`
-- `updateMessageStatus(conversationId, messageId, status, patch?)`
-- `appendAutomation(customerId, event)`
+Outro workflow `n8n-workflows/handoff.json`:
+- **Webhook** `POST /webhook/handoff` — recebe `{ conversationId }`.
+- **HTTP Request** Chatwoot — atualiza `custom_attributes.ai_handling = false` e cria nota.
+- **HTTP Request** Slack/Email opcional para notificar a equipe.
 
-**`src/routes/inbox.tsx`** — `ChatArea`:
-- Botão `Paperclip` → input file (múltiplos; imagens, PDF, DOC); limite 5 arquivos / 10 MB cada.
-- `pendingAttachments` com previews (`URL.createObjectURL`); strip removível acima do textarea; cleanup de object URLs.
-- `submit()`: cria mensagem otimista com `status: "sending"` e UUID, envia via service; sucesso → `delivered`; falha → enfileira no outbox e marca `queued` (offline) ou `error` (online).
-- Render por status: `Loader2` (sending), `CloudOff` (queued), `Check` + hora (delivered), `AlertCircle` + botão "Tentar novamente" (error).
-- "Tentar novamente": volta status para `sending`, reenviá via service, segue mesmo fluxo.
-- Anexos no balão: grid com thumbs clicáveis (imagem) e cards minimalistas (arquivo).
-- "Assumir conversa": além do toast, registra `AutomationEvent` (`handover`, success) no contexto via `appendAutomation`.
+Outro workflow `n8n-workflows/reverse-logistics.json`:
+- **Webhook** `POST /webhook/reverse-logistics` — recebe `{ orderId }`.
+- **HTTP Request** ERP/Shopify (placeholder) que cria etiqueta de devolução.
+- **HTTP Request** Chatwoot — adiciona nota privada com `trackingId`.
 
-**`ContextPanel`** (mesmo arquivo) — nova seção "Histórico de automações" abaixo do "Raciocínio da IA":
-- Timeline vertical (linha + ponto), itens com ícone por tipo, título, descrição, hora relativa, badge de resultado.
-- Botão "Ver payload" expande JSON formatado em `<pre>` discreto.
-
-**`src/routes/__root.tsx`** — montar `useOutboxFlusher()` dentro do provider.
+### 6. `n8n-workflows/README.md` (criar)
+- Como importar (Workflows → Import from file).
+- Variáveis n8n a configurar em **Credentials → HTTP Header Auth** e em **Variables**: `CHATWOOT_URL`, `CHATWOOT_API_TOKEN`, `CHATWOOT_ACCOUNT_ID`, `CHATWOOT_INBOX_IDENTIFIER`, `EVOLUTION_URL`, `EVOLUTION_API_KEY`, `DIFY_URL`, `DIFY_API_KEY`.
+- Como testar: enviar mensagem do WhatsApp para o número conectado via Evolution → conferir conversa criada no Chatwoot e resposta automática da IA.
 
 ## Detalhes técnicos
 
-- IDs com `crypto.randomUUID()`.
-- Persistência: `zustand/middleware` `persist` (storage `localStorage`, key `anfitriao-outbox-v1`); apenas metadados de arquivos.
-- Offline: detectado por `navigator.onLine` + listeners `online`/`offline`.
-- Backoff do flusher: `min(60s, 5s * 2^attempts)`.
-- Toda a lógica é mock — nenhuma chamada real de rede; manter isolado a `/inbox`.
+- Todas as chamadas usam `fetch` nativo (sem novas dependências).
+- `isLive` flag por service evita quebrar preview Vercel sem env vars.
+- Mappers tolerantes a campos ausentes (defaults razoáveis).
+- Anexos: front envia como object URL local → `sendMessage` faz `fetch(url).blob()` antes do multipart. Isso funciona porque object URLs são same-origin do app.
+- CORS: o usuário precisa habilitar no Chatwoot/Dify o origin do front (`https://anfitriao.vercel.app` + custom domain). Documentar no README.
+- Tipos: nenhuma mudança em `src/services/types.ts` — interfaces atuais já cobrem.
 
 ## Fora de escopo
 
-Persistência de arquivos binários reais, retry em background via Service Worker, alterações em `/dashboard` e `/brain`.
+- Implementação de webhook *receptor* no front (Chatwoot → Anfitriao) para realtime; isso exigiria WebSocket do Chatwoot (`/cable`) — fica para fase 4.
+- Persistência local de credenciais por usuário (multi-tenant) — assume single-tenant.
+- Alterações em `/dashboard` e `/inbox` UI — apenas a camada de service muda.
