@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Bot, Search, Send, Paperclip, Sparkles, ArrowLeft, Info } from "lucide-react";
+import { Bot, Search, Send, Paperclip, Sparkles, ArrowLeft, Info, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useInboxStore } from "@/stores/inboxStore";
@@ -185,12 +186,37 @@ function ChatArea({
   onAssume: () => void | Promise<void>;
 }) {
   const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const [assuming, setAssuming] = useState(false);
 
   const submit = async () => {
     const t = draft.trim();
-    if (!t) return;
+    if (!t || sending) return;
     setDraft("");
-    await onSend(t);
+    setSending(true);
+    try {
+      await onSend(t);
+      toast.success("Mensagem enviada", { description: `Entregue via ${channelLabel[conversation.channel]}` });
+    } catch {
+      toast.error("Falha ao enviar mensagem");
+      setDraft(t);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const assume = async () => {
+    if (assuming) return;
+    setAssuming(true);
+    toast.loading("Acionando handover…", { id: "handover" });
+    try {
+      await onAssume();
+      toast.success("Conversa assumida pelo time humano", { id: "handover", description: "Automação n8n disparada com sucesso" });
+    } catch {
+      toast.error("Não foi possível acionar o handover", { id: "handover" });
+    } finally {
+      setAssuming(false);
+    }
   };
 
   return (
