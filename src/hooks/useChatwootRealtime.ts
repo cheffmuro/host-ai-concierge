@@ -47,11 +47,11 @@ export function useChatwootRealtime(handlers: Handlers) {
       if (event === "message.created" || event === "message.updated") {
         const cid = String(d.conversation_id ?? (d.conversation as { id?: number })?.id ?? "");
         if (!cid) return;
-        h.onMessage?.(cid, mapMessage(d as Parameters<typeof mapMessage>[0]));
+        h.onMessage?.(cid, mapMessage(d as unknown as Parameters<typeof mapMessage>[0]));
       } else if (event === "conversation.updated" || event === "conversation.status_changed") {
         const cid = String(d.id ?? "");
         if (!cid) return;
-        const patch = mapConversation(d as Parameters<typeof mapConversation>[0]);
+        const patch = mapConversation(d as unknown as Parameters<typeof mapConversation>[0]);
         h.onConversationUpdated?.(cid, {
           aiHandling: patch.aiHandling,
           sentiment: patch.sentiment,
