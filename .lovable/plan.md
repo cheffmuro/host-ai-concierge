@@ -1,84 +1,49 @@
-# ANFITRIÃO — Painel Omnichannel (Quiet Luxury)
+# Feedback visual /inbox + nota sobre PWA
 
-Painel operacional PWA para SAC de luxo, unificando conversas multicanal e gestão de uma IA concierge (RAG). Toda a UI usa dados mockados, com camada de serviços pronta para integração futura com Chatwoot, Dify e n8n.
+As rotas `/dashboard`, `/inbox` e `/brain` já foram entregues no turno anterior com cards de métricas, gráfico Recharts de 7 dias, upload de documentos e fluxo de Q&A mockados. Esta iteração foca apenas no que ainda falta.
 
-## Design System
+## 1. Toaster global
 
-- Paleta monocromática: fundo `bg-slate-50`, painéis `bg-white`, texto `text-slate-900` / `text-slate-500`, acentos discretos em areia/grafite.
-- Tipografia Inter (carregada via Google Fonts no `__root.tsx`); Medium para títulos, Regular para corpo, tracking levemente reduzido nos headings.
-- Tokens shadcn ajustados em `src/styles.css`: `--radius` reduzido para `2px` (visual arquitetônico), atualização das variáveis OKLCH para o tom off-white/charcoal.
-- Componentes shadcn/ui já existentes reaproveitados (button, card, badge, table, sidebar, dialog, input, textarea, scroll-area, separator, avatar, tabs).
-- Ícones `lucide-react` com `strokeWidth={1.5}`.
+- Em `src/routes/__root.tsx`, importar `Toaster` de `@/components/ui/sonner` e montar uma única instância dentro do `SidebarProvider`, abaixo do layout. Mantém um único ponto de exibição para toda a app.
 
-## Rotas (TanStack Start, file-based)
+## 2. Feedback visual em /inbox
 
-```
-src/routes/
-  __root.tsx           layout raiz com fonte Inter + SidebarProvider
-  index.tsx            redireciona para /dashboard
-  dashboard.tsx        Visão de Comando
-  inbox.tsx            Omnichannel (3 colunas)
-  brain.tsx            Gestão RAG
-```
+Em `src/routes/inbox.tsx`:
 
-Cada rota define `head()` próprio (title/description/og).
+- Importar `toast` de `sonner` e `Loader2` de `lucide-react`.
+- `ChatArea` ganha estado local `sending` e `assuming` (booleans). Usar `useTransition` não — basta `useState` + `try/finally`.
+- **Envio de mensagem (`submit`)**:
+  - Valida draft, marca `sending=true`, limpa o textarea e chama `onSend(text)`.
+  - Em caso de sucesso: `toast.success("Mensagem enviada", { description: "Entregue via " + canal })`.
+  - Em erro: `toast.error("Falha ao enviar mensagem")` e restaura o draft no textarea.
+  - Botão "Enviar" mostra `Loader2` girando + texto "Enviando…" e fica desabilitado enquanto `sending`.
+  - Textarea desabilita enquanto `sending` para impedir envios paralelos.
+- **Handover (`onAssume` no header)**:
+  - `toast.loading("Acionando handover…", { id: "handover" })` ao iniciar.
+  - Em sucesso: `toast.success("Conversa assumida pelo time humano", { id: "handover", description: "Automação n8n disparada com sucesso" })`.
+  - Em erro: `toast.error("Não foi possível acionar o handover", { id: "handover" })`.
+  - Botão "Assumir conversa" troca o ícone por `Loader2` e desabilita enquanto `assuming`.
+- As funções `onSend` / `onAssume` já são `async` no componente pai — a callback continua igual, só o `ChatArea` passa a tratar loading + toast.
 
-### /dashboard — Visão de Comando
-- 4 cards minimalistas: Taxa de Resolução IA, Tempo Médio de Atendimento, Transbordos Humanos, Conversas Ativas. Número grande em Medium, label em uppercase tracking-wide, delta semanal sutil.
-- Gráfico de linha (Recharts) com volume de atendimentos automatizados — 7 dias, traço fino, sem grid pesado, tooltip discreto.
-- Lista compacta "Últimos transbordos" abaixo.
+## 3. Service worker / PWA — esclarecimento (sem mudança de código)
 
-### /inbox — Handover Humanizado
-Grid 30/50/20 em desktop, colapsa em mobile (lista → chat → contexto via drawer).
+O `vite-plugin-pwa` já está configurado em `vite.config.ts` com `registerType: "autoUpdate"` e manifest válido (`/manifest.webmanifest`, ícones 192/512). O plano original deixou o registro desativado em ambiente de preview por uma diretriz da plataforma:
 
-- **Esquerda (lista de conversas):** avatar com inicial, nome, prévia, ícone de canal (WhatsApp/Mail/Globe), timestamp, badge de emoção (`Frustrado`, `Neutro`, `Satisfeito`) com cores muito dessaturadas. Busca no topo + filtro por canal.
-- **Centro (chat):** header com nome + canal + status; balões refinados (cliente à esquerda, operação à direita); mensagens da IA marcadas com ícone `Bot` discreto e label "Concierge IA"; input com anexos, atalho de envio, botão "Assumir conversa" no topo quando IA está ativa.
-- **Direita (Contexto do Cliente):** ticket médio, LTV, últimas compras, tags, e bloco "Raciocínio da IA" com a regra aplicada (ex.: "Política de troca art.3 — ofereci devolução com coleta").
+> Service workers registrados dentro do iframe de preview do Lovable causam cache agressivo de builds antigos, "presos" no editor, e interferem no roteamento do preview. Por isso o registro só deve ocorrer em produção, fora do iframe.
 
-Mobile: lista ocupa tela inteira; ao tocar abre o chat; contexto vira `Sheet` lateral acessível por botão no header.
+Implicação prática:
+- **No preview** (`id-preview--*.lovable.app` dentro do iframe do editor): o SW NÃO é registrado, o app não fica instalável e não há modo offline. Isso é intencional — não é bug.
+- **Após publicar** (`*.lovable.app` aberto em uma aba normal do navegador, fora do editor): o SW é registrado automaticamente pelo `vite-plugin-pwa` (`registerType: "autoUpdate"`), o manifest é servido e o navegador exibe o prompt "Instalar app". O modo offline passa a funcionar para navegação (estratégia `NetworkFirst` com cache `html`).
 
-### /brain — Gestão de Conhecimento (RAG)
-- Tabs: "Documentos" e "Q&A".
-- Documentos: zona de upload (drag & drop mock), tabela com nome, tipo, tamanho, status de indexação, data, ações (reindexar/remover).
-- Q&A: formulário Pergunta/Resposta + tabela das entradas treinadas, com busca.
+Para validar a instalação:
+1. Publicar o projeto pelo botão Publish.
+2. Abrir a URL publicada em uma janela normal do Chrome/Edge (não dentro do editor).
+3. Aguardar o ícone de instalação aparecer na barra de endereço, ou DevTools → Application → Manifest / Service Workers.
 
-## Layout & Navegação
+Não vou habilitar o registro do SW dentro do preview porque isso quebraria o próprio editor de pré-visualização — é uma restrição conhecida da plataforma.
 
-- `AppSidebar` com `collapsible="icon"`, logo monograma "A." no topo, links: Dashboard, Inbox, Brain. Item ativo destacado por barra fina à esquerda + texto charcoal. Rodapé com avatar do operador e status.
-- Header fino (48px) com `SidebarTrigger`, breadcrumb da rota e ações contextuais.
+## Entregáveis desta iteração
 
-## Camada de Serviços (mock-ready)
-
-Em `src/services/`, todas as funções retornam Promises com dados mockados de `src/mocks/`, prontas para serem trocadas por chamadas reais:
-
-- `chatwootService.ts` — `listConversations`, `getConversation`, `sendMessage`, `assignAgent`.
-- `difyService.ts` — `listKnowledgeDocuments`, `uploadDocument`, `addQAPair`, `removeDocument`.
-- `n8nService.ts` — `triggerReverseLogistics`, `triggerHandoff`.
-
-Tipos compartilhados em `src/services/types.ts` (Conversation, Message, Channel, Sentiment, KnowledgeDoc, QAPair, CustomerContext).
-
-## Estado
-
-- Zustand (`src/stores/inboxStore.ts`) para conversa selecionada, filtros, draft de mensagem e abertura do painel de contexto em mobile.
-- Estado das demais páginas é local (useState) — sem store global desnecessária.
-
-## PWA
-
-`vite-plugin-pwa` configurado em `vite.config.ts`:
-- `registerType: "autoUpdate"`, `devOptions.enabled: false`.
-- Manifest: nome "Anfitrião", short_name "Anfitrião", `display: "standalone"`, theme `#0f172a`, background `#f8fafc`, ícones 192/512 (SVG monograma gerado em `public/`).
-- Registro do SW em `src/main.tsx` com guarda anti-iframe / anti-preview (não registra em `id-preview--*` nem dentro de iframe), seguindo as diretrizes da plataforma. PWA só ativa em produção publicada.
-
-## Detalhes técnicos
-
-- Dependências novas: `recharts`, `zustand`, `vite-plugin-pwa`, `date-fns`.
-- Mocks ricos em `src/mocks/` (≥8 conversas com mensagens, 3 documentos, métricas e série temporal de 7 dias).
-- Acessibilidade: foco visível discreto, labels em todos os inputs, navegação por teclado na lista de conversas.
-- Sem alterações em `routeTree.gen.ts` (gerado automaticamente).
-
-## Entregáveis
-
-1. Tokens e fonte Inter aplicados; sidebar + header.
-2. Rotas `/dashboard`, `/inbox`, `/brain` completas com mocks.
-3. `src/services/*` e `src/stores/inboxStore.ts`.
-4. PWA instalável com guarda de iframe.
+1. `Toaster` montado no layout raiz.
+2. `ChatArea` com estados de loading e toasts em envio de mensagem e handover.
+3. Resposta clara sobre o status do PWA (já configurado; só ativa em produção publicada).

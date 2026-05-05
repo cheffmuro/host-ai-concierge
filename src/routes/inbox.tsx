@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Bot, Search, Send, Paperclip, Sparkles, ArrowLeft, Info } from "lucide-react";
+import { Bot, Search, Send, Paperclip, Sparkles, ArrowLeft, Info, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useInboxStore } from "@/stores/inboxStore";
@@ -185,12 +186,37 @@ function ChatArea({
   onAssume: () => void | Promise<void>;
 }) {
   const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const [assuming, setAssuming] = useState(false);
 
   const submit = async () => {
     const t = draft.trim();
-    if (!t) return;
+    if (!t || sending) return;
     setDraft("");
-    await onSend(t);
+    setSending(true);
+    try {
+      await onSend(t);
+      toast.success("Mensagem enviada", { description: `Entregue via ${channelLabel[conversation.channel]}` });
+    } catch {
+      toast.error("Falha ao enviar mensagem");
+      setDraft(t);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const assume = async () => {
+    if (assuming) return;
+    setAssuming(true);
+    toast.loading("Acionando handover…", { id: "handover" });
+    try {
+      await onAssume();
+      toast.success("Conversa assumida pelo time humano", { id: "handover", description: "Automação n8n disparada com sucesso" });
+    } catch {
+      toast.error("Não foi possível acionar o handover", { id: "handover" });
+    } finally {
+      setAssuming(false);
+    }
   };
 
   return (
@@ -214,9 +240,9 @@ function ChatArea({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {conversation.aiHandling && (
-            <Button onClick={onAssume} size="sm" variant="outline" className="rounded-sm h-8 text-xs gap-1.5">
-              <Sparkles className="h-3 w-3" strokeWidth={1.5} />
-              Assumir conversa
+            <Button onClick={assume} disabled={assuming} size="sm" variant="outline" className="rounded-sm h-8 text-xs gap-1.5">
+              {assuming ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} /> : <Sparkles className="h-3 w-3" strokeWidth={1.5} />}
+              {assuming ? "Acionando…" : "Assumir conversa"}
             </Button>
           )}
           <Sheet>
@@ -270,6 +296,7 @@ function ChatArea({
           <Textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
+            disabled={sending}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -280,9 +307,9 @@ function ChatArea({
             className="min-h-[40px] max-h-40 resize-none rounded-sm border-border/60 text-sm"
             rows={1}
           />
-          <Button onClick={submit} className="h-9 rounded-sm bg-slate-900 hover:bg-slate-800 gap-1.5">
-            <Send className="h-3.5 w-3.5" strokeWidth={1.5} />
-            Enviar
+          <Button onClick={submit} disabled={sending || !draft.trim()} className="h-9 rounded-sm bg-slate-900 hover:bg-slate-800 gap-1.5">
+            {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.5} /> : <Send className="h-3.5 w-3.5" strokeWidth={1.5} />}
+            {sending ? "Enviando…" : "Enviar"}
           </Button>
         </div>
       </div>
