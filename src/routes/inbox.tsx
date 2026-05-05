@@ -240,9 +240,9 @@ function ChatArea({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {conversation.aiHandling && (
-            <Button onClick={onAssume} size="sm" variant="outline" className="rounded-sm h-8 text-xs gap-1.5">
-              <Sparkles className="h-3 w-3" strokeWidth={1.5} />
-              Assumir conversa
+            <Button onClick={assume} disabled={assuming} size="sm" variant="outline" className="rounded-sm h-8 text-xs gap-1.5">
+              {assuming ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} /> : <Sparkles className="h-3 w-3" strokeWidth={1.5} />}
+              {assuming ? "Acionando…" : "Assumir conversa"}
             </Button>
           )}
           <Sheet>
@@ -296,6 +296,7 @@ function ChatArea({
           <Textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
+            disabled={sending}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -306,9 +307,9 @@ function ChatArea({
             className="min-h-[40px] max-h-40 resize-none rounded-sm border-border/60 text-sm"
             rows={1}
           />
-          <Button onClick={submit} className="h-9 rounded-sm bg-slate-900 hover:bg-slate-800 gap-1.5">
-            <Send className="h-3.5 w-3.5" strokeWidth={1.5} />
-            Enviar
+          <Button onClick={submit} disabled={sending || !draft.trim()} className="h-9 rounded-sm bg-slate-900 hover:bg-slate-800 gap-1.5">
+            {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={1.5} /> : <Send className="h-3.5 w-3.5" strokeWidth={1.5} />}
+            {sending ? "Enviando…" : "Enviar"}
           </Button>
         </div>
       </div>
