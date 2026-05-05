@@ -81,7 +81,7 @@ interface CwConversation {
 const initials = (name: string) =>
   name.split(" ").slice(0, 2).map((p) => p[0]?.toUpperCase()).join("");
 
-function mapMessage(m: CwMessage): Message {
+export function mapMessage(m: CwMessage): Message {
   const author = m.message_type === 0 ? "customer" : m.content_attributes?.ai ? "ai" : "agent";
   return {
     id: String(m.id),
@@ -101,7 +101,7 @@ function mapMessage(m: CwMessage): Message {
   };
 }
 
-function mapConversation(c: CwConversation): Conversation {
+export function mapConversation(c: CwConversation): Conversation {
   const name = c.meta?.sender?.name || "Cliente";
   return {
     id: String(c.id),
