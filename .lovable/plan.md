@@ -1,49 +1,96 @@
-# Feedback visual /inbox + nota sobre PWA
+# Inbox: fila offline, anexos, status de mensagem e histórico de automações
 
-As rotas `/dashboard`, `/inbox` e `/brain` já foram entregues no turno anterior com cards de métricas, gráfico Recharts de 7 dias, upload de documentos e fluxo de Q&A mockados. Esta iteração foca apenas no que ainda falta.
+Quatro melhorias na rota `/inbox` e na camada de serviços, todas mockadas em memória (sem backend).
 
-## 1. Toaster global
+## 1. Tipos & camada de serviços
 
-- Em `src/routes/__root.tsx`, importar `Toaster` de `@/components/ui/sonner` e montar uma única instância dentro do `SidebarProvider`, abaixo do layout. Mantém um único ponto de exibição para toda a app.
+`src/services/types.ts`:
+- `MessageStatus = "sending" | "queued" | "delivered" | "error"`.
+- `Message` ganha `status?: MessageStatus`, `attachments?: Attachment[]`, `error?: string`.
+- Novo `Attachment { id, name, mime, size, url, kind: "image" | "file" }` (`url` é object URL local).
+- Novo `AutomationEvent { id, type: "handover" | "reverse_logistics" | "ai_response", title, description, status: "success" | "error" | "pending", timestamp, payload? }`.
+- `CustomerContext` ganha `automations: AutomationEvent[]` (popular nos mocks com 2–3 eventos por cliente para demonstrar a UI).
 
-## 2. Feedback visual em /inbox
+`src/services/chatwootService.ts`:
+- `sendMessage(conversationId, content, attachments?)` — Promise; simula falha aleatória (~30%) jogando erro, para exercitar a fila offline.
+- Nova `listAutomations(conversationId): Promise<AutomationEvent[]>` (lê do mock).
 
-Em `src/routes/inbox.tsx`:
+`src/services/n8nService.ts`:
+- `triggerHandoff` continua igual; mantém retorno `{ ok: true }`.
 
-- Importar `toast` de `sonner` e `Loader2` de `lucide-react`.
-- `ChatArea` ganha estado local `sending` e `assuming` (booleans). Usar `useTransition` não — basta `useState` + `try/finally`.
-- **Envio de mensagem (`submit`)**:
-  - Valida draft, marca `sending=true`, limpa o textarea e chama `onSend(text)`.
-  - Em caso de sucesso: `toast.success("Mensagem enviada", { description: "Entregue via " + canal })`.
-  - Em erro: `toast.error("Falha ao enviar mensagem")` e restaura o draft no textarea.
-  - Botão "Enviar" mostra `Loader2` girando + texto "Enviando…" e fica desabilitado enquanto `sending`.
-  - Textarea desabilita enquanto `sending` para impedir envios paralelos.
-- **Handover (`onAssume` no header)**:
-  - `toast.loading("Acionando handover…", { id: "handover" })` ao iniciar.
-  - Em sucesso: `toast.success("Conversa assumida pelo time humano", { id: "handover", description: "Automação n8n disparada com sucesso" })`.
-  - Em erro: `toast.error("Não foi possível acionar o handover", { id: "handover" })`.
-  - Botão "Assumir conversa" troca o ícone por `Loader2` e desabilita enquanto `assuming`.
-- As funções `onSend` / `onAssume` já são `async` no componente pai — a callback continua igual, só o `ChatArea` passa a tratar loading + toast.
+## 2. Fila offline com auto-reenvio
 
-## 3. Service worker / PWA — esclarecimento (sem mudança de código)
+Novo `src/stores/outboxStore.ts` (Zustand + `persist` em `localStorage`):
 
-O `vite-plugin-pwa` já está configurado em `vite.config.ts` com `registerType: "autoUpdate"` e manifest válido (`/manifest.webmanifest`, ícones 192/512). O plano original deixou o registro desativado em ambiente de preview por uma diretriz da plataforma:
+```
+type OutboxItem = {
+  id: string;            // mesmo id da mensagem otimista
+  conversationId: string;
+  content: string;
+  attachments?: SerializableAttachment[];  // sem File/Blob, só metadados (anexos não persistem entre reloads)
+  createdAt: string;
+  attempts: number;
+  lastError?: string;
+};
 
-> Service workers registrados dentro do iframe de preview do Lovable causam cache agressivo de builds antigos, "presos" no editor, e interferem no roteamento do preview. Por isso o registro só deve ocorrer em produção, fora do iframe.
+state: { items: OutboxItem[]; flushing: boolean }
+actions: enqueue, dequeue, markAttempt, clearForConversation, getForConversation
+```
 
-Implicação prática:
-- **No preview** (`id-preview--*.lovable.app` dentro do iframe do editor): o SW NÃO é registrado, o app não fica instalável e não há modo offline. Isso é intencional — não é bug.
-- **Após publicar** (`*.lovable.app` aberto em uma aba normal do navegador, fora do editor): o SW é registrado automaticamente pelo `vite-plugin-pwa` (`registerType: "autoUpdate"`), o manifest é servido e o navegador exibe o prompt "Instalar app". O modo offline passa a funcionar para navegação (estratégia `NetworkFirst` com cache `html`).
+Hook `src/hooks/useOutboxFlusher.ts`:
+- Monta listeners `online` / `offline` no `window`.
+- Função `flush()` percorre items: chama `sendMessage` via `chatwootService`; em sucesso remove o item e dispara callback para atualizar o status da mensagem para `delivered`; em erro incrementa `attempts` e mantém na fila.
+- Roda quando: app ganha `online`, ao montar (catch-up), e a cada ~15s (backoff simples) enquanto houver items.
+- Toasts: `toast.info("Conexão restabelecida — reenviando N mensagens")` ao voltar online; `toast.success` por reenvio bem-sucedido.
 
-Para validar a instalação:
-1. Publicar o projeto pelo botão Publish.
-2. Abrir a URL publicada em uma janela normal do Chrome/Edge (não dentro do editor).
-3. Aguardar o ícone de instalação aparecer na barra de endereço, ou DevTools → Application → Manifest / Service Workers.
+O hook é montado no nível da rota `/inbox` para ter acesso ao callback que atualiza o estado de conversas.
 
-Não vou habilitar o registro do SW dentro do preview porque isso quebraria o próprio editor de pré-visualização — é uma restrição conhecida da plataforma.
+## 3. Anexos no inbox
 
-## Entregáveis desta iteração
+`src/routes/inbox.tsx` no `ChatArea`:
+- Botão `Paperclip` abre input de arquivo (`<input type="file" multiple accept="image/*,application/pdf,.doc,.docx,.xlsx" hidden ref>`) — antes era apenas decorativo.
+- Estado local `pendingAttachments: Attachment[]` (com `URL.createObjectURL` para preview de imagens).
+- Strip de previews acima do textarea: thumbnails 56px para imagens, badge com nome+ícone para outros; cada um com botão "x" para remover.
+- `submit()` envia `content + attachments`; permite envio só com anexos (texto opcional se houver anexo).
+- Limite simples: até 5 anexos, 10MB cada (toast.error se exceder).
+- Cleanup dos object URLs em `useEffect` cleanup.
+- Renderização das mensagens: se `attachments`, mostrar grid acima do texto — `<img>` para imagens, "card de arquivo" minimal (ícone + nome + tamanho) para os demais.
 
-1. `Toaster` montado no layout raiz.
-2. `ChatArea` com estados de loading e toasts em envio de mensagem e handover.
-3. Resposta clara sobre o status do PWA (já configurado; só ativa em produção publicada).
+## 4. Estados de mensagem no chat
+
+Fluxo no `submit`:
+1. Cria mensagem otimista com `id`, `status: "sending"`, attachments → push imediato em `conversation.messages`.
+2. Chama `sendMessage`; em sucesso, marca `status: "delivered"` (timestamp do servidor). Em falha, marca `status: "queued"`, enfileira em `outboxStore`, mostra `toast.info("Sem conexão — mensagem na fila")`. Se erro for "permanente" (>3 attempts), `status: "error"`.
+
+Renderização do balão (apenas para `author === "agent"`):
+- `sending`: spinner Loader2 12px + "Enviando…" em `text-slate-400`.
+- `queued`: ícone `CloudOff` + "Na fila".
+- `delivered`: ícone `Check` + horário.
+- `error`: ícone `AlertCircle` em `text-rose-600` + botão "Tentar novamente" inline que reexecuta o envio (e move para `sending`).
+
+Hook do flusher atualiza `status` quando a fila esvaziar com sucesso.
+
+## 5. Histórico de handovers e automações
+
+`ContextPanel` ganha nova seção "Linha do tempo de automações" abaixo de "Raciocínio da IA":
+- Lista vertical compacta com timeline-style (linha vertical à esquerda + dot por evento).
+- Cada item mostra: badge do tipo (Handover / Logística reversa / Resposta IA), título, descrição (motivo), timestamp formatado e badge de resultado (success verde dessaturado / error rose / pending âmbar).
+- Botão "Ver payload" expansível (`<details>`) que mostra `payload` em `<pre>` mono pequena, para auditoria.
+- Quando o usuário aciona "Assumir conversa" no chat, criamos um novo `AutomationEvent` localmente (no estado das conversas) e ele aparece imediatamente nessa timeline. Mesmo padrão para reenvios da fila offline (registro de tipo `ai_response` com status correspondente — opcional, manter escopo enxuto: só registramos `handover` por enquanto para evitar inflar o painel).
+
+Mocks: adicionar 2 eventos por cliente em `mockConversations` (ex.: handover anterior bem-sucedido, disparo de logística reversa).
+
+## Detalhes técnicos
+
+- IDs de mensagem usam `crypto.randomUUID()` (disponível no Worker e no browser moderno).
+- O `outboxStore.persist` só persiste `content + metadados de anexo` — arquivos reais (`File`) não atravessam reload; ao recarregar com itens na fila, eles são reenviados como mensagem texto + um aviso "Anexo perdido no reload" (toast.warning).
+- Todas as mudanças continuam isoladas em `/inbox`; outras rotas não precisam ajuste.
+- TypeScript estrito: garantir que campos novos são opcionais para não quebrar dados existentes.
+
+## Entregáveis
+
+1. Tipos atualizados + serviços mock falhando aleatoriamente.
+2. `outboxStore` com persist + `useOutboxFlusher`.
+3. ChatArea com seleção/preview/envio de anexos e renderização de anexos nas mensagens.
+4. Indicadores visuais de status por mensagem + retry manual em erro.
+5. Timeline de automações no painel de contexto + integração com o botão "Assumir conversa".
