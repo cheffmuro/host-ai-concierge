@@ -1,5 +1,7 @@
 # Anfitrião
 
+> Repo: [`cheffmuro/host-ai-concierge`](https://github.com/cheffmuro/host-ai-concierge) · Path padrão na VPS: `/opt/host-ai-concierge` · Docker project: `host-ai-concierge`
+
 Concierge de atendimento omnichannel com IA (Chatwoot + Dify + n8n + Evolution API)
 e front em React/TanStack Start.
 

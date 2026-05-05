@@ -1,5 +1,5 @@
 {
-  "name": "Anfitriao — Logística reversa",
+  "name": "Host AI Concierge — Logística reversa",
   "nodes": [
     {
       "parameters": { "httpMethod": "POST", "path": "reverse-logistics", "responseMode": "responseNode" },

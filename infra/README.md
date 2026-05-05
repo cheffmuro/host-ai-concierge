@@ -1,16 +1,26 @@
-# Anfitrião — Infra (VPS)
+# Host AI Concierge — Infra (VPS)
 
 Stack Docker completa: **Chatwoot + Dify + n8n + Evolution API + Postgres + Redis + Caddy** (TLS automático).
 
+> **Project name Docker:** `host-ai-concierge` — todos os comandos `docker compose` neste repo
+> rodam com esse prefixo (`docker compose -p host-ai-concierge ...`). Volumes e rede são
+> nomeados como `host-ai-concierge_<nome>`. Path padrão na VPS: `/opt/host-ai-concierge`.
+
 ```
 infra/
-├── docker-compose.yml      Stack completa
-├── .env.example            Variáveis (copie para .env)
-├── caddy/Caddyfile         Reverse proxy + TLS
-├── chatwoot/cors-setup.rb  Libera origins do front
-├── dify/.env.dify.example  Overrides opcionais
-├── evolution/              Script de bootstrap WhatsApp
-└── scripts/                bootstrap | backup | validate
+├── docker-compose.yml                   Stack completa (com healthchecks)
+├── .env.example                         Variáveis (copie para .env)
+├── caddy/Caddyfile                      Reverse proxy + TLS
+├── chatwoot/cors-setup.rb               Libera origins do front
+├── dify/.env.dify.example               Overrides opcionais
+├── evolution/create-instance.sh         Bootstrap WhatsApp + webhook n8n
+└── scripts/
+    ├── bootstrap.sh                     Instalação inicial (Docker + up + db prepare)
+    ├── up-and-check.sh                  Sobe stack + valida saúde de todos containers
+    ├── validate.sh                      7 checks externos (HTTP/CORS/webhook)
+    ├── backup.sh                        Dump diário Postgres + snapshot volumes
+    ├── migrate-from-anfitriao.sh        Migração 1-clique da stack antiga
+    └── migrate-rollback.sh              Rollback para stack antiga
 ```
 
 ## Pré-requisitos
@@ -94,7 +104,7 @@ bash evolution/create-instance.sh
 ```
 
 Escaneie o QR no WhatsApp → Aparelhos conectados. O webhook já fica
-registrado em `https://n8n.suaempresa.com.br/webhook/whatsapp-rag`.
+registrado em `https://n8n.suaempresa.com.br/webhook/whatsapp`.
 
 ### 7. Validar
 
@@ -102,7 +112,38 @@ registrado em `https://n8n.suaempresa.com.br/webhook/whatsapp-rag`.
 bash scripts/validate.sh
 ```
 
-Saída esperada: `Resultado: 6 passou / 0 falhou`.
+Saída esperada: `Resultado: 7 passou / 0 falhou`.
+
+> Quer também checar a saúde interna de cada container (não só o externo)?
+> Rode `bash scripts/up-and-check.sh` — sobe a stack se necessário e valida
+> que todo container está `running`/`healthy` antes de rodar `validate.sh`.
+
+## Migração da stack antiga (`anfitriao` → `host-ai-concierge`)
+
+Se você já rodava a stack com o nome de projeto `anfitriao`, faça a migração
+sem perda de dados com o script único:
+
+```bash
+cd /opt/host-ai-concierge/infra
+bash scripts/migrate-from-anfitriao.sh           # interativo
+bash scripts/migrate-from-anfitriao.sh --yes     # sem prompts
+bash scripts/migrate-from-anfitriao.sh --yes --auto-rollback
+```
+
+O script faz:
+1. Backup completo (`pg_dump` dos 3 DBs + `tar.gz` de todos volumes `anfitriao_*`).
+2. Para a stack antiga (sem apagar volumes).
+3. Copia dados dos volumes `anfitriao_*` → `host-ai-concierge_*`.
+4. Sobe a nova stack e valida.
+
+**Rollback rápido:**
+
+```bash
+bash scripts/migrate-rollback.sh                 # reusa volumes antigos intactos
+bash scripts/migrate-rollback.sh <stamp>         # restaura backup específico
+```
+
+Os volumes antigos só são apagados manualmente (`docker compose -p anfitriao down -v`).
 
 ## Backup
 

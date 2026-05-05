@@ -69,6 +69,12 @@ services:
     command: ["bundle", "exec", "rails", "s", "-p", "3000", "-b", "0.0.0.0"]
     volumes:
       - chatwoot_storage:/app/storage
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/ >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
     networks: [host-ai-concierge_net]
 
   chatwoot-sidekiq:
@@ -118,6 +124,12 @@ services:
       CONSOLE_CORS_ALLOW_ORIGINS: ${DIFY_CORS_ORIGINS}
     volumes:
       - dify_storage:/app/api/storage
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5001/console/api/setup >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
     networks: [host-ai-concierge_net]
 
   dify-worker:
@@ -179,6 +191,12 @@ services:
     volumes:
       - n8n_data:/home/node/.n8n
       - ../n8n-workflows:/workflows:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     networks: [host-ai-concierge_net]
 
   # ---------- Evolution API (WhatsApp) ----------
@@ -190,10 +208,16 @@ services:
       AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY}
       AUTHENTICATION_TYPE: apikey
       DATABASE_ENABLED: "false"
-      WEBHOOK_GLOBAL_URL: https://n8n.${BASE_DOMAIN}/webhook/whatsapp-rag
+      WEBHOOK_GLOBAL_URL: https://n8n.${BASE_DOMAIN}/webhook/whatsapp
       WEBHOOK_GLOBAL_ENABLED: "true"
     volumes:
       - evolution_instances:/evolution/instances
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/ >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     networks: [host-ai-concierge_net]
 
   # ---------- Reverse proxy + TLS ----------

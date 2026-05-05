@@ -1,4 +1,4 @@
-# n8n Workflows — Anfitrião
+# n8n Workflows — Host AI Concierge (Anfitrião)
 
 3 workflows prontos para importar no n8n self-hosted (stack `docker-compose.yml`).
 
