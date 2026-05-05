@@ -1,0 +1,68 @@
+{
+  "name": "Anfitriao — Handover (IA → humano)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "handoff",
+        "responseMode": "responseNode"
+      },
+      "id": "wh",
+      "name": "Webhook handoff",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "anfitriao-handoff"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.CHATWOOT_URL}}/api/v1/accounts/{{$env.CHATWOOT_ACCOUNT_ID}}/conversations/{{$json.body.conversationId}}/custom_attributes",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "api_access_token", "value": "={{$env.CHATWOOT_API_TOKEN}}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ]},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"custom_attributes\": { \"ai_handling\": false }\n}"
+      },
+      "id": "cw-flag",
+      "name": "Chatwoot · disable AI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.CHATWOOT_URL}}/api/v1/accounts/{{$env.CHATWOOT_ACCOUNT_ID}}/conversations/{{$node['Webhook handoff'].json.body.conversationId}}/messages",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "api_access_token", "value": "={{$env.CHATWOOT_API_TOKEN}}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ]},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": \"[automation] Handover acionado pelo painel Anfitrião em {{$node['Webhook handoff'].json.body.at}}\",\n  \"message_type\": \"outgoing\",\n  \"private\": true\n}"
+      },
+      "id": "cw-note",
+      "name": "Chatwoot · private note",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": { "respondWith": "json", "responseBody": "={ \"ok\": true }" },
+      "id": "ok", "name": "OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1, "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Webhook handoff": { "main": [[{ "node": "Chatwoot · disable AI", "type": "main", "index": 0 }]] },
+    "Chatwoot · disable AI": { "main": [[{ "node": "Chatwoot · private note", "type": "main", "index": 0 }]] },
+    "Chatwoot · private note": { "main": [[{ "node": "OK", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}
