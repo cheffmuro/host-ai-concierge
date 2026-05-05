@@ -1,6 +1,16 @@
 export type Channel = "whatsapp" | "email" | "web";
 export type Sentiment = "frustrated" | "neutral" | "satisfied";
 export type MessageAuthor = "customer" | "agent" | "ai";
+export type MessageStatus = "sending" | "queued" | "delivered" | "error";
+
+export interface Attachment {
+  id: string;
+  name: string;
+  mime: string;
+  size: number;
+  url: string;
+  kind: "image" | "file";
+}
 
 export interface Message {
   id: string;
@@ -8,6 +18,22 @@ export interface Message {
   content: string;
   timestamp: string;
   aiReasoning?: string;
+  status?: MessageStatus;
+  attachments?: Attachment[];
+  error?: string;
+}
+
+export type AutomationType = "handover" | "reverse_logistics" | "ai_response";
+export type AutomationStatus = "success" | "error" | "pending";
+
+export interface AutomationEvent {
+  id: string;
+  type: AutomationType;
+  title: string;
+  description: string;
+  status: AutomationStatus;
+  timestamp: string;
+  payload?: Record<string, unknown>;
 }
 
 export interface CustomerContext {
@@ -17,6 +43,7 @@ export interface CustomerContext {
   lastPurchases: { id: string; item: string; date: string; amount: number }[];
   tags: string[];
   aiReasoning?: string;
+  automations: AutomationEvent[];
 }
 
 export interface Conversation {

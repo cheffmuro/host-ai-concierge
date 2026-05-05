@@ -25,8 +25,11 @@ export const mockConversations: Conversation[] = [
         { id: "o2", item: "Bolsa couro Nappa", date: "2026-04-12", amount: 6200 },
       ],
       tags: ["VIP", "Atelier SP"],
-      aiReasoning: "Cliente VIP com histórico positivo. Priorizar resolução com coleta + reembolso e oferecer voucher de cortesia.",
-    },
+      aiReasoning: "Cliente VIP com histórico positivo. Priorizar resolução com coleta + reembolso e oferecer voucher de cortesia.", automations: [
+      { id: "a1", type: "handover", title: "Transbordo para humano", description: "IA encaminhou ao time após detectar frustração.", status: "success", timestamp: "2026-04-21T15:14:00Z", payload: { agent: "Júlia Vianna", reason: "sentiment=frustrated" } },
+      { id: "a2", type: "reverse_logistics", title: "Logística reversa disparada", description: "Coleta agendada com transportadora premium.", status: "success", timestamp: "2026-03-18T11:02:00Z", payload: { trackingId: "RL77821", courier: "Premium Express" } },
+      { id: "a3", type: "ai_response", title: "Resposta automatizada", description: "IA respondeu com base em política de troca art. 3.", status: "success", timestamp: "2026-05-05T13:31:00Z" }
+    ] },
   },
   {
     id: "c2",
@@ -42,7 +45,11 @@ export const mockConversations: Conversation[] = [
       { id: "m1", author: "customer", content: "Olá, gostaria de confirmar o prazo de entrega internacional para Lisboa.", timestamp: "2026-05-05T11:50:00Z" },
       { id: "m2", author: "ai", content: "Bom dia, Rafael. Para Lisboa o prazo médio é de 7 a 10 dias úteis via courier expresso, com rastreio dedicado.", timestamp: "2026-05-05T11:51:00Z", aiReasoning: "Tabela de prazos internacionais — zona EU." },
     ],
-    context: { ltv: 12400, averageTicket: 3100, totalOrders: 4, lastPurchases: [{ id: "o1", item: "Sapato Oxford", date: "2026-03-20", amount: 3100 }], tags: ["Internacional"] },
+    context: { ltv: 12400, averageTicket: 3100, totalOrders: 4, lastPurchases: [{ id: "o1", item: "Sapato Oxford", date: "2026-03-20", amount: 3100 }], tags: ["Internacional"], automations: [
+      { id: "a1", type: "handover", title: "Transbordo para humano", description: "IA encaminhou ao time após detectar frustração.", status: "success", timestamp: "2026-04-21T15:14:00Z", payload: { agent: "Júlia Vianna", reason: "sentiment=frustrated" } },
+      { id: "a2", type: "reverse_logistics", title: "Logística reversa disparada", description: "Coleta agendada com transportadora premium.", status: "success", timestamp: "2026-03-18T11:02:00Z", payload: { trackingId: "RL77821", courier: "Premium Express" } },
+      { id: "a3", type: "ai_response", title: "Resposta automatizada", description: "IA respondeu com base em política de troca art. 3.", status: "success", timestamp: "2026-05-05T13:31:00Z" }
+    ] },
   },
   {
     id: "c3",
@@ -58,7 +65,11 @@ export const mockConversations: Conversation[] = [
       { id: "m1", author: "customer", content: "Obrigada pelo atendimento impecável! Vocês superaram a expectativa.", timestamp: "2026-05-05T10:05:00Z" },
       { id: "m2", author: "agent", content: "Marina, obrigada. É um prazer atendê-la.", timestamp: "2026-05-05T10:08:00Z" },
     ],
-    context: { ltv: 32000, averageTicket: 2666, totalOrders: 12, lastPurchases: [{ id: "o1", item: "Lenço seda", date: "2026-04-30", amount: 980 }], tags: ["Recorrente"] },
+    context: { ltv: 32000, averageTicket: 2666, totalOrders: 12, lastPurchases: [{ id: "o1", item: "Lenço seda", date: "2026-04-30", amount: 980 }], tags: ["Recorrente"], automations: [
+      { id: "a1", type: "handover", title: "Transbordo para humano", description: "IA encaminhou ao time após detectar frustração.", status: "success", timestamp: "2026-04-21T15:14:00Z", payload: { agent: "Júlia Vianna", reason: "sentiment=frustrated" } },
+      { id: "a2", type: "reverse_logistics", title: "Logística reversa disparada", description: "Coleta agendada com transportadora premium.", status: "success", timestamp: "2026-03-18T11:02:00Z", payload: { trackingId: "RL77821", courier: "Premium Express" } },
+      { id: "a3", type: "ai_response", title: "Resposta automatizada", description: "IA respondeu com base em política de troca art. 3.", status: "success", timestamp: "2026-05-05T13:31:00Z" }
+    ] },
   },
   {
     id: "c4",
@@ -73,7 +84,11 @@ export const mockConversations: Conversation[] = [
     messages: [
       { id: "m1", author: "customer", content: "Já é a segunda vez que peço posição do meu pedido #88421.", timestamp: "2026-05-05T09:30:00Z" },
     ],
-    context: { ltv: 5400, averageTicket: 5400, totalOrders: 1, lastPurchases: [{ id: "o1", item: "Casaco lã", date: "2026-04-29", amount: 5400 }], tags: ["Primeira compra"] },
+    context: { ltv: 5400, averageTicket: 5400, totalOrders: 1, lastPurchases: [{ id: "o1", item: "Casaco lã", date: "2026-04-29", amount: 5400 }], tags: ["Primeira compra"], automations: [
+      { id: "a1", type: "handover", title: "Transbordo para humano", description: "IA encaminhou ao time após detectar frustração.", status: "success", timestamp: "2026-04-21T15:14:00Z", payload: { agent: "Júlia Vianna", reason: "sentiment=frustrated" } },
+      { id: "a2", type: "reverse_logistics", title: "Logística reversa disparada", description: "Coleta agendada com transportadora premium.", status: "success", timestamp: "2026-03-18T11:02:00Z", payload: { trackingId: "RL77821", courier: "Premium Express" } },
+      { id: "a3", type: "ai_response", title: "Resposta automatizada", description: "IA respondeu com base em política de troca art. 3.", status: "success", timestamp: "2026-05-05T13:31:00Z" }
+    ] },
   },
   {
     id: "c5",
@@ -88,7 +103,11 @@ export const mockConversations: Conversation[] = [
     messages: [
       { id: "m1", author: "customer", content: "Existe lista de espera para a coleção cápsula de outono?", timestamp: "2026-05-04T19:20:00Z" },
     ],
-    context: { ltv: 21000, averageTicket: 3500, totalOrders: 6, lastPurchases: [], tags: ["Aficionada"] },
+    context: { ltv: 21000, averageTicket: 3500, totalOrders: 6, lastPurchases: [], tags: ["Aficionada"], automations: [
+      { id: "a1", type: "handover", title: "Transbordo para humano", description: "IA encaminhou ao time após detectar frustração.", status: "success", timestamp: "2026-04-21T15:14:00Z", payload: { agent: "Júlia Vianna", reason: "sentiment=frustrated" } },
+      { id: "a2", type: "reverse_logistics", title: "Logística reversa disparada", description: "Coleta agendada com transportadora premium.", status: "success", timestamp: "2026-03-18T11:02:00Z", payload: { trackingId: "RL77821", courier: "Premium Express" } },
+      { id: "a3", type: "ai_response", title: "Resposta automatizada", description: "IA respondeu com base em política de troca art. 3.", status: "success", timestamp: "2026-05-05T13:31:00Z" }
+    ] },
   },
   {
     id: "c6",
@@ -101,7 +120,11 @@ export const mockConversations: Conversation[] = [
     updatedAt: "2026-05-04T16:11:00Z",
     aiHandling: true,
     messages: [{ id: "m1", author: "customer", content: "Posso reservar a peça para retirada em loja?", timestamp: "2026-05-04T16:11:00Z" }],
-    context: { ltv: 9900, averageTicket: 3300, totalOrders: 3, lastPurchases: [], tags: [] },
+    context: { ltv: 9900, averageTicket: 3300, totalOrders: 3, lastPurchases: [], tags: [], automations: [
+      { id: "a1", type: "handover", title: "Transbordo para humano", description: "IA encaminhou ao time após detectar frustração.", status: "success", timestamp: "2026-04-21T15:14:00Z", payload: { agent: "Júlia Vianna", reason: "sentiment=frustrated" } },
+      { id: "a2", type: "reverse_logistics", title: "Logística reversa disparada", description: "Coleta agendada com transportadora premium.", status: "success", timestamp: "2026-03-18T11:02:00Z", payload: { trackingId: "RL77821", courier: "Premium Express" } },
+      { id: "a3", type: "ai_response", title: "Resposta automatizada", description: "IA respondeu com base em política de troca art. 3.", status: "success", timestamp: "2026-05-05T13:31:00Z" }
+    ] },
   },
   {
     id: "c7",
@@ -114,7 +137,11 @@ export const mockConversations: Conversation[] = [
     updatedAt: "2026-05-04T11:02:00Z",
     aiHandling: false,
     messages: [{ id: "m1", author: "customer", content: "A embalagem foi um espetáculo à parte. Parabéns à equipe.", timestamp: "2026-05-04T11:02:00Z" }],
-    context: { ltv: 41200, averageTicket: 4120, totalOrders: 10, lastPurchases: [], tags: ["VIP"] },
+    context: { ltv: 41200, averageTicket: 4120, totalOrders: 10, lastPurchases: [], tags: ["VIP"], automations: [
+      { id: "a1", type: "handover", title: "Transbordo para humano", description: "IA encaminhou ao time após detectar frustração.", status: "success", timestamp: "2026-04-21T15:14:00Z", payload: { agent: "Júlia Vianna", reason: "sentiment=frustrated" } },
+      { id: "a2", type: "reverse_logistics", title: "Logística reversa disparada", description: "Coleta agendada com transportadora premium.", status: "success", timestamp: "2026-03-18T11:02:00Z", payload: { trackingId: "RL77821", courier: "Premium Express" } },
+      { id: "a3", type: "ai_response", title: "Resposta automatizada", description: "IA respondeu com base em política de troca art. 3.", status: "success", timestamp: "2026-05-05T13:31:00Z" }
+    ] },
   },
   {
     id: "c8",
@@ -127,7 +154,11 @@ export const mockConversations: Conversation[] = [
     updatedAt: "2026-05-03T22:45:00Z",
     aiHandling: false,
     messages: [{ id: "m1", author: "customer", content: "Tive uma cobrança duplicada no cartão referente ao pedido #88002.", timestamp: "2026-05-03T22:45:00Z" }],
-    context: { ltv: 7600, averageTicket: 3800, totalOrders: 2, lastPurchases: [], tags: [] },
+    context: { ltv: 7600, averageTicket: 3800, totalOrders: 2, lastPurchases: [], tags: [], automations: [
+      { id: "a1", type: "handover", title: "Transbordo para humano", description: "IA encaminhou ao time após detectar frustração.", status: "success", timestamp: "2026-04-21T15:14:00Z", payload: { agent: "Júlia Vianna", reason: "sentiment=frustrated" } },
+      { id: "a2", type: "reverse_logistics", title: "Logística reversa disparada", description: "Coleta agendada com transportadora premium.", status: "success", timestamp: "2026-03-18T11:02:00Z", payload: { trackingId: "RL77821", courier: "Premium Express" } },
+      { id: "a3", type: "ai_response", title: "Resposta automatizada", description: "IA respondeu com base em política de troca art. 3.", status: "success", timestamp: "2026-05-05T13:31:00Z" }
+    ] },
   },
 ];
 
