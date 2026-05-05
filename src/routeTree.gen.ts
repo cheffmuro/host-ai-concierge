@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WorkflowsRouteImport } from './routes/workflows'
 import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as BrainRouteImport } from './routes/brain'
 import { Route as IndexRouteImport } from './routes/index'
 
+const WorkflowsRoute = WorkflowsRouteImport.update({
+  id: '/workflows',
+  path: '/workflows',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InboxRoute = InboxRouteImport.update({
   id: '/inbox',
   path: '/inbox',
@@ -40,12 +46,14 @@ export interface FileRoutesByFullPath {
   '/brain': typeof BrainRoute
   '/dashboard': typeof DashboardRoute
   '/inbox': typeof InboxRoute
+  '/workflows': typeof WorkflowsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/brain': typeof BrainRoute
   '/dashboard': typeof DashboardRoute
   '/inbox': typeof InboxRoute
+  '/workflows': typeof WorkflowsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,14 @@ export interface FileRoutesById {
   '/brain': typeof BrainRoute
   '/dashboard': typeof DashboardRoute
   '/inbox': typeof InboxRoute
+  '/workflows': typeof WorkflowsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/brain' | '/dashboard' | '/inbox'
+  fullPaths: '/' | '/brain' | '/dashboard' | '/inbox' | '/workflows'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/brain' | '/dashboard' | '/inbox'
-  id: '__root__' | '/' | '/brain' | '/dashboard' | '/inbox'
+  to: '/' | '/brain' | '/dashboard' | '/inbox' | '/workflows'
+  id: '__root__' | '/' | '/brain' | '/dashboard' | '/inbox' | '/workflows'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,10 +76,18 @@ export interface RootRouteChildren {
   BrainRoute: typeof BrainRoute
   DashboardRoute: typeof DashboardRoute
   InboxRoute: typeof InboxRoute
+  WorkflowsRoute: typeof WorkflowsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/workflows': {
+      id: '/workflows'
+      path: '/workflows'
+      fullPath: '/workflows'
+      preLoaderRoute: typeof WorkflowsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/inbox': {
       id: '/inbox'
       path: '/inbox'
@@ -107,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   BrainRoute: BrainRoute,
   DashboardRoute: DashboardRoute,
   InboxRoute: InboxRoute,
+  WorkflowsRoute: WorkflowsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
