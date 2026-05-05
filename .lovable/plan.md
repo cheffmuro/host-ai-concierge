@@ -1,139 +1,72 @@
+## Contexto importante (corrigindo o guia que você colou)
 
-## Contexto
+O guia genérico que você colou foi escrito para um projeto Vercel padrão. **Este projeto já está pronto** — eu não preciso reescrever os services. Dois pontos críticos:
 
-O rename `anfitriao → host-ai-concierge` já foi aplicado (compose project name, rede, volumes, paths `/opt/`, user Postgres default, webhookIds, origin Vercel). Falta: (1) verificar saúde da nova stack, (2) propagar o novo path em toda a doc, (3) entregar migração 1-clique com rollback, (4) confirmar que o n8n continua funcional após o rename.
+1. **Não estamos na Vercel.** Estamos no Lovable Cloud (domínio `anfitriao.app.br`). Variáveis `VITE_*` são configuradas em **Lovable → Project Settings → Environment Variables** (ou via secrets), não na Vercel.
+2. **Os nomes das variáveis no guia colado estão ERRADOS** para este código. O código em `src/services/*` já existe, já chama as APIs reais, e espera nomes específicos. Se você usar os nomes do guia (ex.: `VITE_DIFY_API_URL`, `VITE_CHATWOOT_TOKEN`, `VITE_N8N_WEBHOOK_URL`), nada vai conectar — vai continuar em modo MOCK.
 
-Não tenho acesso à VPS — então “verificar se sobe sem erros” vira **um script de bring-up + healthcheck** que o usuário roda na VPS e me reporta o resultado, mais um aviso explícito do que pode quebrar.
+## Nomes corretos que o código espera
 
----
+| Serviço | Variável correta (este projeto) | Variável errada (guia colado) |
+|---|---|---|
+| Chatwoot URL | `VITE_CHATWOOT_URL` | ✓ igual |
+| Chatwoot token | `VITE_CHATWOOT_USER_TOKEN` | ❌ `VITE_CHATWOOT_TOKEN` |
+| Chatwoot account | `VITE_CHATWOOT_ACCOUNT_ID` | (faltando) |
+| Chatwoot inbox | `VITE_CHATWOOT_INBOX_ID` | (faltando) |
+| Chatwoot pubsub | `VITE_CHATWOOT_PUBSUB_TOKEN` | (faltando) |
+| Dify URL | `VITE_DIFY_URL` | ❌ `VITE_DIFY_API_URL` |
+| Dify key | `VITE_DIFY_API_KEY` | ✓ igual |
+| Dify dataset | `VITE_DIFY_DATASET_ID` | (faltando) |
+| n8n handoff | `VITE_N8N_WEBHOOK_HANDOFF` | ❌ `VITE_N8N_WEBHOOK_URL` |
+| n8n logística | `VITE_N8N_WEBHOOK_REVERSE_LOGISTICS` | (faltando) |
+| n8n token | `VITE_N8N_WEBHOOK_TOKEN` | (opcional) |
 
-## 1. Healthcheck da nova stack (`infra/scripts/up-and-check.sh`)
+Confirmei lendo `src/services/chatwootService.ts`, `difyService.ts` e `n8nService.ts` — todos já têm a integração real implementada com fallback automático para mock quando as variáveis estão ausentes. **Não há código a escrever; só configurar variáveis.**
 
-Script novo que:
-1. `docker compose config -q` (valida YAML/env antes de subir).
-2. `docker compose up -d --remove-orphans`.
-3. Loop de até 180 s consultando `docker compose ps --format json` — falha se algum serviço terminar em `exited` ou ficar `unhealthy`.
-4. Para cada serviço sem healthcheck nativo (dify-web, dify-sandbox, n8n, evolution, caddy), faz um `curl` interno via `docker compose exec caddy wget -qO- http://<svc>:<port>/...` e exige 2xx/3xx/401.
-5. Roda `scripts/validate.sh` no final (os 6 checks externos via HTTPS).
-6. Em qualquer falha imprime `docker compose logs --tail=80 <svc>` do serviço problemático e sai != 0.
+## Plano de execução (modo Build)
 
-Adiciono também healthchecks explícitos no `docker-compose.yml` para `chatwoot-rails` (`curl -f http://localhost:3000/`), `dify-api` (`/console/api/setup`), `n8n` (`/healthz`) e `evolution` (`/`) para o passo 3 do script ser determinístico.
+### Passo 1 — Pré-requisito (bloqueante)
+Os 4 subdomínios DNS (chatwoot/dify/n8n/evo.anfitriao.app.br) precisam estar resolvendo para o IP da VPS, e o stack Docker (`bash scripts/bootstrap.sh`) precisa estar de pé. Sem isso, qualquer token configurado falha em runtime.
 
-## 2. Atualizar docs para o novo path/nome
+→ **Confirme** que rodou o bootstrap e que `https://chatwoot.anfitriao.app.br` abre.
 
-**`README.md` raiz** (linhas 1, 32–33):
-- Título mantém “Anfitrião” (marca do produto), adiciono subtítulo `_repo: cheffmuro/host-ai-concierge_`.
-- Bloco de clone já está em `/opt/host-ai-concierge` ✅ (verifiquei).
+### Passo 2 — Coletar credenciais na sua VPS
+Você precisa pegar 6 valores:
 
-**`infra/README.md`**:
-- Trocar título e primeira linha para “**Host AI Concierge** — Infra (VPS)”.
-- Adicionar nota destacada: **nome do projeto Docker = `host-ai-concierge`** (`docker compose -p host-ai-concierge ...`) e **prefixo dos volumes/rede = `host-ai-concierge_*`**.
-- Cron já aponta para `/opt/host-ai-concierge/...` ✅.
-- Webhook do passo 6 está como `/webhook/whatsapp-rag` mas o workflow usa path `whatsapp` → corrigir para `https://n8n.${BASE_DOMAIN}/webhook/whatsapp` (ver seção 4).
-- Nova seção **“Migração de stack antiga”** apontando para `scripts/migrate-from-anfitriao.sh` (seção 3).
+1. **Chatwoot Access Token**: Chatwoot → Profile Settings → Access Token → copiar
+2. **Chatwoot Account ID**: número na URL após login (ex: `/app/accounts/1` → `1`)
+3. **Chatwoot Inbox ID**: Settings → Inboxes → criar inbox API/Website → copiar ID da URL
+4. **Chatwoot PubSub Token**: mesmo Profile Settings → Access Token (serve para ActionCable)
+5. **Dify API Key**: Dify → seu App → API Access → copiar Service API Key
+6. **Dify Dataset ID**: Dify → Knowledge → seu dataset → Settings → copiar Dataset ID
 
-**`n8n-workflows/README.md`**:
-- Título → “Host AI Concierge — n8n Workflows”.
-- Renomear os 3 nomes internos dos workflows (chave `name` nos JSONs) de `Anfitriao —` para `Host AI Concierge —`.
+URLs base (já sabemos):
+- `VITE_CHATWOOT_URL=https://chatwoot.anfitriao.app.br`
+- `VITE_DIFY_URL=https://dify.anfitriao.app.br`
+- `VITE_N8N_WEBHOOK_HANDOFF=https://n8n.anfitriao.app.br/webhook/handoff`
+- `VITE_N8N_WEBHOOK_REVERSE_LOGISTICS=https://n8n.anfitriao.app.br/webhook/reverse-logistics`
 
-**`.lovable/plan.md`**: anexar entrada “rename concluído + migração”.
+### Passo 3 — Configurar as variáveis no Lovable
+Eu adiciono as 11 variáveis acima como secrets do projeto (você cola os valores quando eu pedir, um por um, em formulário seguro). Como são `VITE_*`, o Lovable as injeta no build.
 
-## 3. Script único de migração (`infra/scripts/migrate-from-anfitriao.sh`)
-
-Migração idempotente, executada na VPS dentro do novo checkout (`/opt/host-ai-concierge/infra`). Fluxo:
-
-```text
-[0] Pré-checks
-    ├─ Confirma execução (prompt y/N, pode pular com --yes)
-    ├─ Verifica .env presente
-    └─ Detecta stack antiga: docker compose -p anfitriao ps -q
-
-[1] Backup completo da stack antiga (em backups/migration_<stamp>/)
-    ├─ pg_dump dos 3 DBs (chatwoot, dify, n8n) via container postgres antigo
-    ├─ tar.gz de cada volume nomeado anfitriao_*  (read-only mount)
-    └─ Salva docker compose -p anfitriao config > old-compose.yml (manifesto)
-
-[2] Para a stack antiga sem apagar volumes
-    └─ docker compose -p anfitriao stop
-
-[3] Cria volumes novos host-ai-concierge_* e copia dados
-    └─ Para cada volume: docker run --rm -v anfitriao_X:/from -v host-ai-concierge_X:/to alpine sh -c 'cp -a /from/. /to/'
-
-[4] Sobe a nova stack
-    └─ bash scripts/up-and-check.sh
-
-[5] Valida
-    └─ bash scripts/validate.sh  (exit != 0 dispara rollback automático se --auto-rollback)
-
-[6] Imprime instruções finais
-    ├─ Como remover a stack antiga: docker compose -p anfitriao down -v
-    └─ Como restaurar: bash scripts/migrate-rollback.sh <stamp>
+### Passo 4 — Configurar CORS no Chatwoot (lado VPS)
+Editar `infra/chatwoot/cors-setup.rb` para incluir `https://anfitriao.app.br` e `https://host-concierge.lovable.app`, e rodar dentro do container:
+```
+docker compose exec chatwoot-rails bundle exec rails runner /app/cors-setup.rb
 ```
 
-Flags: `--yes` (sem prompt), `--auto-rollback` (rollback se passo 5 falhar), `--keep-old` (não remove referência da stack antiga).
+### Passo 5 — Validação
+Rodar `bash infra/scripts/validate.sh` na VPS — esperar 7/7 verde (Chatwoot up, Dify up, n8n up, Evolution up, webhook handoff, CORS, webhook WhatsApp).
 
-**Rollback rápido (`infra/scripts/migrate-rollback.sh`)**:
-1. `docker compose -p host-ai-concierge down` (mantém volumes novos).
-2. `docker compose -p anfitriao up -d` (reusa volumes antigos intactos).
-3. Se `<stamp>` passado e volumes antigos perdidos: restaura tar.gz de `backups/migration_<stamp>/` para `anfitriao_*` antes do up.
+Depois, abrir `https://anfitriao.app.br/inbox` e confirmar que aparecem conversas reais (não os mocks `c1`, `c2`).
 
-Garantias:
-- Volumes antigos `anfitriao_*` **nunca** são apagados pelo script — só por comando manual.
-- Backup vai para `infra/backups/migration_<stamp>/` (já no `.gitignore`).
-- Idempotente: se rodar de novo, detecta volumes novos já populados e pula passo 3.
+### Passo 6 — Importar workflows n8n
+Importar os 3 JSONs de `n8n-workflows/` (handoff, reverse-logistics, whatsapp-rag-chatwoot) e ativá-los.
 
-## 4. Validação dos webhooks/integrações n8n após o rename
+## O que eu preciso de você agora para destravar
 
-Inventário e correções:
+**Responda na ordem:**
+1. O `bootstrap.sh` já rodou na VPS? `https://chatwoot.anfitriao.app.br` abre a tela de login?
+2. Se sim, me confirme que pegou os 6 valores listados no Passo 2 — aí eu inicio a configuração das secrets uma a uma.
 
-| Item | Estado | Ação |
-|---|---|---|
-| `webhookId` nos 3 JSONs | já como `host-ai-concierge-*` | nada — IDs internos do n8n, irrelevantes para chamadas externas |
-| Webhook **path** (`/webhook/whatsapp`, `/webhook/handoff`, `/webhook/reverse-logistics`) | inalterado | nenhuma mudança nas URLs externas — Vercel envs `VITE_N8N_WEBHOOK_*` continuam válidas |
-| `WEBHOOK_GLOBAL_URL` no Evolution (`docker-compose.yml`) | aponta para `…/webhook/whatsapp-rag` ❌ | corrigir para `…/webhook/whatsapp` (path real do workflow) |
-| `evolution/create-instance.sh` `N8N_WEBHOOK` | aponta para `…/webhook/whatsapp-rag` ❌ | mesma correção |
-| `infra/README.md` passo 6 | mesmo erro | mesma correção |
-| Nome interno dos workflows (chave `name` nos JSONs) | ainda “Anfitriao —” | renomear para “Host AI Concierge —” (cosmético; não afeta execução) |
-| `n8nService.ts` `source: "host-ai-concierge"` | ✅ | nada |
-| `outbox` storage key `host-ai-concierge-outbox` | ✅ — porém **invalida outbox local de usuários existentes** | adicionar nota no README + migration shim no Zustand persist (`migrate` callback lendo a key antiga `anfitriao-outbox`) |
-| Marca “Anfitrião” na UI (sidebar, títulos, manifest PWA) | mantida | nada |
-
-Adiciono ao final de `validate.sh` um 7º check específico: `POST` em `/webhook/whatsapp` com payload mock da Evolution — confirma que o workflow principal está ativo após o rename.
-
-## Arquivos tocados
-
-Criados:
-- `infra/scripts/up-and-check.sh`
-- `infra/scripts/migrate-from-anfitriao.sh`
-- `infra/scripts/migrate-rollback.sh`
-
-Editados:
-- `infra/docker-compose.yml` (healthchecks + corrigir `WEBHOOK_GLOBAL_URL`)
-- `infra/evolution/create-instance.sh` (path do webhook)
-- `infra/scripts/validate.sh` (+1 check)
-- `infra/README.md` (título, nota do project name, seção migração, fix do passo 6)
-- `n8n-workflows/README.md` (título)
-- `n8n-workflows/whatsapp-rag-chatwoot.json`, `handoff.json`, `reverse-logistics.json` (chave `name`)
-- `src/stores/outboxStore.ts` (migrate shim para nome antigo)
-- `README.md` raiz (subtítulo com nome do repo)
-- `.lovable/plan.md` (entrada da migração)
-
-## Não-objetivos
-
-- Não rodo a stack na VPS (não tenho acesso); entrego scripts auto-validáveis.
-- Não mudo o nome do produto “Anfitrião” na UI.
-- Não toco no schema dos workflows além de `name` — comportamento permanece idêntico.
-- Não reescrevo `bootstrap.sh` (continua válido para instalação inicial; `up-and-check.sh` é a versão idempotente para reuso).
-
----
-
-## Entrada: rename + migração concluídos
-
-- Compose com healthchecks em `chatwoot-rails`, `dify-api`, `n8n`, `evolution`.
-- `WEBHOOK_GLOBAL_URL` da Evolution e `create-instance.sh` agora apontam para `/webhook/whatsapp` (path real).
-- `validate.sh` ganhou 7º check (POST mock no webhook do WhatsApp).
-- `up-and-check.sh`: sobe stack + valida saúde de todos containers (180s timeout) + roda `validate.sh`.
-- `migrate-from-anfitriao.sh`: backup completo (pg_dump + tar volumes) → stop antiga → copy volumes → up nova → validate. Idempotente. Flags `--yes`, `--auto-rollback`.
-- `migrate-rollback.sh`: derruba nova, sobe antiga; com `<stamp>` restaura tar.gz dos volumes.
-- Outbox store: `onRehydrateStorage` migra payload da chave legada `anfitriao-outbox`.
-- Docs (`README.md`, `infra/README.md`, `n8n-workflows/README.md`) atualizadas com novo path/projeto Docker e seção de migração.
+Se ainda não rodou o bootstrap, esse é o próximo passo antes de qualquer coisa de API.
