@@ -87,3 +87,17 @@ Passo a passo curto:
 Crio os arquivos, então você:
 1. Conecta o repo `cheffmuro/Anfitriao` (Connectors → GitHub → Connect project)
 2. Faz `git pull` na VPS dentro de `infra/` para subir a stack
+
+---
+
+## Entrada: infra versionada (concluída)
+
+Toda a stack VPS foi movida para `infra/` no repo:
+- `docker-compose.yml` (Chatwoot + Dify + n8n + Evolution + Postgres + Redis + Caddy)
+- `.env.example` + `.gitignore` (segredos fora do git)
+- `caddy/Caddyfile` (TLS automático)
+- `chatwoot/cors-setup.rb`, `evolution/create-instance.sh`
+- `scripts/bootstrap.sh | backup.sh | validate.sh | init-multi-db.sh`
+- `README.md` com passo a passo completo
+
+`README.md` raiz e `.gitignore` raiz atualizados.
