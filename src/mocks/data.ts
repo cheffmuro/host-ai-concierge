@@ -25,7 +25,7 @@ export const mockConversations: Conversation[] = [
         { id: "o2", item: "Bolsa couro Nappa", date: "2026-04-12", amount: 6200 },
       ],
       tags: ["VIP", "Atelier SP"],
-      aiReasoning: "Cliente VIP com histórico positivo. Priorizar resolução com coleta + reembolso e oferecer voucher de cortesia.",, automations: [
+      aiReasoning: "Cliente VIP com histórico positivo. Priorizar resolução com coleta + reembolso e oferecer voucher de cortesia.", automations: [
       { id: "a1", type: "handover", title: "Transbordo para humano", description: "IA encaminhou ao time após detectar frustração.", status: "success", timestamp: "2026-04-21T15:14:00Z", payload: { agent: "Júlia Vianna", reason: "sentiment=frustrated" } },
       { id: "a2", type: "reverse_logistics", title: "Logística reversa disparada", description: "Coleta agendada com transportadora premium.", status: "success", timestamp: "2026-03-18T11:02:00Z", payload: { trackingId: "RL77821", courier: "Premium Express" } },
       { id: "a3", type: "ai_response", title: "Resposta automatizada", description: "IA respondeu com base em política de troca art. 3.", status: "success", timestamp: "2026-05-05T13:31:00Z" }
