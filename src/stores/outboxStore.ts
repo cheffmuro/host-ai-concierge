@@ -47,6 +47,26 @@ export const useOutboxStore = create<OutboxState>()(
     }),
     {
       name: "host-ai-concierge-outbox",
+      version: 2,
+      // One-time migration from the previous storage key ("anfitriao-outbox")
+      // so users who already had a queued outbox don't lose it after the rename.
+      migrate: (persistedState, _version) => persistedState as OutboxState,
+      onRehydrateStorage: () => (state) => {
+        if (typeof window === "undefined" || !state) return;
+        if (state.items && state.items.length > 0) return;
+        try {
+          const legacy = window.localStorage.getItem("anfitriao-outbox");
+          if (!legacy) return;
+          const parsed = JSON.parse(legacy);
+          const items = parsed?.state?.items;
+          if (Array.isArray(items) && items.length > 0) {
+            state.items = items;
+          }
+          window.localStorage.removeItem("anfitriao-outbox");
+        } catch {
+          /* ignore — legacy payload corrupted */
+        }
+      },
     },
   ),
 );
