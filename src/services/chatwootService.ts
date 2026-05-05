@@ -198,3 +198,21 @@ export async function listAutomations(conversationId: string): Promise<Automatio
 }
 
 export const chatwootInboxId = INBOX_ID;
+
+/** Liga/desliga IA para uma conversa via custom_attributes. */
+export async function setAiHandling(conversationId: string, enabled: boolean): Promise<void> {
+  if (!isLive) return;
+  await http(api(`/conversations/${conversationId}/custom_attributes`), {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ custom_attributes: { ai_handling: enabled } }),
+  });
+}
+
+/** Configuração para o consumer realtime. */
+export const chatwootRealtimeConfig = {
+  baseUrl: BASE,
+  pubsubToken: import.meta.env.VITE_CHATWOOT_PUBSUB_TOKEN as string | undefined,
+  accountId: ACCOUNT_ID,
+};
+
