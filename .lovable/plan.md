@@ -1,72 +1,49 @@
-## Contexto importante (corrigindo o guia que você colou)
+## Objetivo
 
-O guia genérico que você colou foi escrito para um projeto Vercel padrão. **Este projeto já está pronto** — eu não preciso reescrever os services. Dois pontos críticos:
+Criar uma área no painel para gerenciar os 3 workflows n8n (`handoff`, `reverse-logistics`, `whatsapp-rag-chatwoot`), permitindo:
+- Ver instruções de import (link direto p/ baixar o JSON do repo)
+- **Validar** cada workflow (ping no webhook → confirma se está ativo no n8n)
+- **Ativar** o "modo conectado" no front (testa de ponta a ponta com payload real)
+- Resumo consolidado: status de cada um + último teste
 
-1. **Não estamos na Vercel.** Estamos no Lovable Cloud (domínio `anfitriao.app.br`). Variáveis `VITE_*` são configuradas em **Lovable → Project Settings → Environment Variables** (ou via secrets), não na Vercel.
-2. **Os nomes das variáveis no guia colado estão ERRADOS** para este código. O código em `src/services/*` já existe, já chama as APIs reais, e espera nomes específicos. Se você usar os nomes do guia (ex.: `VITE_DIFY_API_URL`, `VITE_CHATWOOT_TOKEN`, `VITE_N8N_WEBHOOK_URL`), nada vai conectar — vai continuar em modo MOCK.
+A ativação real (toggle Active) acontece no n8n self-hosted — não há API pública nossa para isso sem credenciais admin do n8n. Então "Ativar" no painel = disparar um payload de teste e marcar como verde se o webhook responder 200.
 
-## Nomes corretos que o código espera
+## Mudanças
 
-| Serviço | Variável correta (este projeto) | Variável errada (guia colado) |
-|---|---|---|
-| Chatwoot URL | `VITE_CHATWOOT_URL` | ✓ igual |
-| Chatwoot token | `VITE_CHATWOOT_USER_TOKEN` | ❌ `VITE_CHATWOOT_TOKEN` |
-| Chatwoot account | `VITE_CHATWOOT_ACCOUNT_ID` | (faltando) |
-| Chatwoot inbox | `VITE_CHATWOOT_INBOX_ID` | (faltando) |
-| Chatwoot pubsub | `VITE_CHATWOOT_PUBSUB_TOKEN` | (faltando) |
-| Dify URL | `VITE_DIFY_URL` | ❌ `VITE_DIFY_API_URL` |
-| Dify key | `VITE_DIFY_API_KEY` | ✓ igual |
-| Dify dataset | `VITE_DIFY_DATASET_ID` | (faltando) |
-| n8n handoff | `VITE_N8N_WEBHOOK_HANDOFF` | ❌ `VITE_N8N_WEBHOOK_URL` |
-| n8n logística | `VITE_N8N_WEBHOOK_REVERSE_LOGISTICS` | (faltando) |
-| n8n token | `VITE_N8N_WEBHOOK_TOKEN` | (opcional) |
+### 1. `src/routes/workflows.tsx` (novo)
+Página com 3 cards (um por workflow). Cada card mostra:
+- Nome, path do webhook, descrição curta
+- Status badge: `desconhecido` / `ok` / `falhou` / `não configurado` (quando a env var está vazia)
+- Botão **Validar** → chama health-check (HEAD/POST com payload mínimo `{ ping: true }`)
+- Botão **Testar com payload real** → dispara via `n8nService` (handoff/reverse) ou payload mock para o whatsapp
+- Link "Baixar JSON" (download do arquivo de `n8n-workflows/`)
+- Última resposta (status + body truncado) num `<pre>`
 
-Confirmei lendo `src/services/chatwootService.ts`, `difyService.ts` e `n8nService.ts` — todos já têm a integração real implementada com fallback automático para mock quando as variáveis estão ausentes. **Não há código a escrever; só configurar variáveis.**
+Topo da página: card-resumo "X de 3 conectados" + botão "Validar todos".
 
-## Plano de execução (modo Build)
+### 2. `src/services/n8nService.ts` (estender)
+Adicionar:
+- `WHATSAPP` env (`VITE_N8N_WEBHOOK_WHATSAPP`) com fallback derivado de `VITE_N8N_BASE_URL` se existir
+- `validateWebhook(url)` → POST `{ ping: true, source: "host-ai-concierge" }`, retorna `{ ok, status, body, ms }`
+- `triggerWhatsappTest(payload)` → simula MESSAGES_UPSERT da Evolution
+- Exportar mapa `WORKFLOWS` com `{ key, label, url, description, jsonPath }` para a UI iterar
 
-### Passo 1 — Pré-requisito (bloqueante)
-Os 4 subdomínios DNS (chatwoot/dify/n8n/evo.anfitriao.app.br) precisam estar resolvendo para o IP da VPS, e o stack Docker (`bash scripts/bootstrap.sh`) precisa estar de pé. Sem isso, qualquer token configurado falha em runtime.
+### 3. `src/components/app-sidebar.tsx`
+Adicionar item "Workflows" (ícone `Workflow` do lucide) apontando p/ `/workflows`.
 
-→ **Confirme** que rodou o bootstrap e que `https://chatwoot.anfitriao.app.br` abre.
+### 4. Copiar JSONs para `public/n8n/` (download)
+Para o link "Baixar JSON" funcionar no app publicado, copiar `handoff.json`, `reverse-logistics.json`, `whatsapp-rag-chatwoot.json` para `public/n8n/`. Acesso via `/n8n/handoff.json`.
 
-### Passo 2 — Coletar credenciais na sua VPS
-Você precisa pegar 6 valores:
+## Detalhes técnicos
 
-1. **Chatwoot Access Token**: Chatwoot → Profile Settings → Access Token → copiar
-2. **Chatwoot Account ID**: número na URL após login (ex: `/app/accounts/1` → `1`)
-3. **Chatwoot Inbox ID**: Settings → Inboxes → criar inbox API/Website → copiar ID da URL
-4. **Chatwoot PubSub Token**: mesmo Profile Settings → Access Token (serve para ActionCable)
-5. **Dify API Key**: Dify → seu App → API Access → copiar Service API Key
-6. **Dify Dataset ID**: Dify → Knowledge → seu dataset → Settings → copiar Dataset ID
+- Estado local (`useState`) por card guarda último resultado; sem persistência (próximo refresh re-valida).
+- Sem mutação no backend nosso — apenas chamadas HTTP aos webhooks n8n.
+- CORS: webhooks n8n por padrão respondem com `*`. Se falhar por CORS, mostrar mensagem clara orientando habilitar `N8N_CORS_ALLOW_ORIGIN` no `.env` do n8n.
+- Não toca em `routeTree.gen.ts` (auto-gerado pelo plugin Vite).
+- Reaproveita componentes existentes (`Card`, `Button`, `Badge`, `sonner` para toasts).
 
-URLs base (já sabemos):
-- `VITE_CHATWOOT_URL=https://chatwoot.anfitriao.app.br`
-- `VITE_DIFY_URL=https://dify.anfitriao.app.br`
-- `VITE_N8N_WEBHOOK_HANDOFF=https://n8n.anfitriao.app.br/webhook/handoff`
-- `VITE_N8N_WEBHOOK_REVERSE_LOGISTICS=https://n8n.anfitriao.app.br/webhook/reverse-logistics`
+## Fora de escopo
 
-### Passo 3 — Configurar as variáveis no Lovable
-Eu adiciono as 11 variáveis acima como secrets do projeto (você cola os valores quando eu pedir, um por um, em formulário seguro). Como são `VITE_*`, o Lovable as injeta no build.
-
-### Passo 4 — Configurar CORS no Chatwoot (lado VPS)
-Editar `infra/chatwoot/cors-setup.rb` para incluir `https://anfitriao.app.br` e `https://host-concierge.lovable.app`, e rodar dentro do container:
-```
-docker compose exec chatwoot-rails bundle exec rails runner /app/cors-setup.rb
-```
-
-### Passo 5 — Validação
-Rodar `bash infra/scripts/validate.sh` na VPS — esperar 7/7 verde (Chatwoot up, Dify up, n8n up, Evolution up, webhook handoff, CORS, webhook WhatsApp).
-
-Depois, abrir `https://anfitriao.app.br/inbox` e confirmar que aparecem conversas reais (não os mocks `c1`, `c2`).
-
-### Passo 6 — Importar workflows n8n
-Importar os 3 JSONs de `n8n-workflows/` (handoff, reverse-logistics, whatsapp-rag-chatwoot) e ativá-los.
-
-## O que eu preciso de você agora para destravar
-
-**Responda na ordem:**
-1. O `bootstrap.sh` já rodou na VPS? `https://chatwoot.anfitriao.app.br` abre a tela de login?
-2. Se sim, me confirme que pegou os 6 valores listados no Passo 2 — aí eu inicio a configuração das secrets uma a uma.
-
-Se ainda não rodou o bootstrap, esse é o próximo passo antes de qualquer coisa de API.
+- Login/admin no n8n via API (exige API key do n8n; pode virar Passo 2 se quiser)
+- Import automático dos JSONs no n8n (mesma razão acima)
+- Persistência de histórico de validações
