@@ -1,0 +1,207 @@
+{
+  "name": "Host AI Concierge — WhatsApp → Dify → Chatwoot",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "whatsapp", "responseMode": "responseNode", "options": {} },
+      "id": "wh-in",
+      "name": "Webhook WhatsApp (Evolution)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "host-ai-concierge-whatsapp"
+    },
+    {
+      "parameters": {
+        "functionCode": "const body = $json.body ?? $json;\nconst data = body.data ?? body;\nconst remoteJid = data.key?.remoteJid ?? data.from ?? '';\nconst phone = remoteJid.split('@')[0];\nconst text = data.message?.conversation\n  ?? data.message?.extendedTextMessage?.text\n  ?? data.body\n  ?? '';\nreturn [{ json: {\n  phone, remoteJid, text,\n  instance: body.instance ?? data.instance ?? 'default',\n  pushName: data.pushName ?? data.notifyName ?? phone,\n  messageId: data.key?.id ?? null,\n  fromMe: Boolean(data.key?.fromMe)\n}}];"
+      },
+      "id": "fn-norm",
+      "name": "Normalize",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": { "conditions": { "boolean": [{ "value1": "={{$json.fromMe}}", "value2": false }] } },
+      "id": "if-notme",
+      "name": "Ignorar próprias",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.CHATWOOT_URL}}/public/api/v1/inboxes/{{$env.CHATWOOT_INBOX_IDENTIFIER}}/contacts",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={\n  \"identifier\": \"{{$json.phone}}\",\n  \"name\": \"{{$json.pushName}}\",\n  \"phone_number\": \"+{{$json.phone}}\"\n}",
+        "options": { "response": { "response": { "neverError": true } } }
+      },
+      "id": "cw-contact",
+      "name": "Chatwoot · upsert contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.CHATWOOT_URL}}/public/api/v1/inboxes/{{$env.CHATWOOT_INBOX_IDENTIFIER}}/contacts/{{$json.source_id}}/conversations",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={}"
+      },
+      "id": "cw-conv",
+      "name": "Chatwoot · open conversation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.CHATWOOT_URL}}/public/api/v1/inboxes/{{$env.CHATWOOT_INBOX_IDENTIFIER}}/contacts/{{$node['Chatwoot · upsert contact'].json.source_id}}/conversations/{{$json.id}}/messages",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }] },
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": \"{{$node['Normalize'].json.text}}\",\n  \"message_type\": \"incoming\"\n}"
+      },
+      "id": "cw-msg-in",
+      "name": "Chatwoot · push incoming",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.CHATWOOT_URL}}/api/v1/accounts/{{$env.CHATWOOT_ACCOUNT_ID}}/conversations/{{$node['Chatwoot · open conversation'].json.id}}",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "api_access_token", "value": "={{$env.CHATWOOT_API_TOKEN}}" }] }
+      },
+      "id": "cw-get",
+      "name": "Chatwoot · fetch conversation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [{
+            "value1": "={{ $json.custom_attributes && $json.custom_attributes.ai_handling === false ? false : true }}",
+            "value2": true
+          }]
+        }
+      },
+      "id": "if-ai",
+      "name": "AI handling?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1780, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.DIFY_URL}}/v1/chat-messages",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "Authorization", "value": "Bearer {{$env.DIFY_API_KEY}}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ]},
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={\n  \"inputs\": {},\n  \"query\": \"{{$node['Normalize'].json.text}}\",\n  \"user\": \"wa-{{$node['Normalize'].json.phone}}\",\n  \"response_mode\": \"blocking\",\n  \"conversation_id\": \"\"\n}"
+      },
+      "id": "dify",
+      "name": "Dify · ask RAG",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.EVOLUTION_URL}}/message/sendText/{{$node['Normalize'].json.instance}}",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "apikey", "value": "={{$env.EVOLUTION_API_KEY}}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ]},
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{$node['Normalize'].json.phone}}\",\n  \"text\": \"{{$json.answer}}\"\n}"
+      },
+      "id": "evo-reply",
+      "name": "Evolution · reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2220, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.CHATWOOT_URL}}/api/v1/accounts/{{$env.CHATWOOT_ACCOUNT_ID}}/conversations/{{$node['Chatwoot · open conversation'].json.id}}/messages",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "api_access_token", "value": "={{$env.CHATWOOT_API_TOKEN}}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ]},
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": \"{{$node['Dify · ask RAG'].json.answer}}\",\n  \"message_type\": \"outgoing\",\n  \"private\": false,\n  \"content_attributes\": { \"ai\": true, \"reasoning\": \"Resposta gerada por Concierge IA via Dify\" }\n}"
+      },
+      "id": "cw-msg-out",
+      "name": "Chatwoot · log AI reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2440, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.CHATWOOT_URL}}/api/v1/accounts/{{$env.CHATWOOT_ACCOUNT_ID}}/conversations/{{$node['Chatwoot · open conversation'].json.id}}/messages",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [
+          { "name": "api_access_token", "value": "={{$env.CHATWOOT_API_TOKEN}}" },
+          { "name": "Content-Type", "value": "application/json" }
+        ]},
+        "sendBody": true, "specifyBody": "json",
+        "jsonBody": "={\n  \"content\": \"[automation] IA pausada — aguardando atendimento humano.\",\n  \"message_type\": \"outgoing\",\n  \"private\": true\n}"
+      },
+      "id": "cw-paused",
+      "name": "Chatwoot · note (IA pausada)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 320]
+    },
+    {
+      "parameters": { "respondWith": "json", "responseBody": "={ \"ok\": true }" },
+      "id": "ok",
+      "name": "OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2660, 200]
+    }
+  ],
+  "connections": {
+    "Webhook WhatsApp (Evolution)": { "main": [[{ "node": "Normalize", "type": "main", "index": 0 }]] },
+    "Normalize": { "main": [[{ "node": "Ignorar próprias", "type": "main", "index": 0 }]] },
+    "Ignorar próprias": { "main": [
+      [{ "node": "Chatwoot · upsert contact", "type": "main", "index": 0 }],
+      []
+    ]},
+    "Chatwoot · upsert contact": { "main": [[{ "node": "Chatwoot · open conversation", "type": "main", "index": 0 }]] },
+    "Chatwoot · open conversation": { "main": [[{ "node": "Chatwoot · push incoming", "type": "main", "index": 0 }]] },
+    "Chatwoot · push incoming": { "main": [[{ "node": "Chatwoot · fetch conversation", "type": "main", "index": 0 }]] },
+    "Chatwoot · fetch conversation": { "main": [[{ "node": "AI handling?", "type": "main", "index": 0 }]] },
+    "AI handling?": { "main": [
+      [{ "node": "Dify · ask RAG", "type": "main", "index": 0 }],
+      [{ "node": "Chatwoot · note (IA pausada)", "type": "main", "index": 0 }]
+    ]},
+    "Dify · ask RAG": { "main": [[{ "node": "Evolution · reply", "type": "main", "index": 0 }]] },
+    "Evolution · reply": { "main": [[{ "node": "Chatwoot · log AI reply", "type": "main", "index": 0 }]] },
+    "Chatwoot · log AI reply": { "main": [[{ "node": "OK", "type": "main", "index": 0 }]] },
+    "Chatwoot · note (IA pausada)": { "main": [[{ "node": "OK", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}
