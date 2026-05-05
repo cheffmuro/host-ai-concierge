@@ -1,5 +1,5 @@
 ## Objetivo
-Versionar toda a infraestrutura da VPS dentro do repo (em `infra/`), para que ao conectar `cheffmuro/Anfitriao` ao GitHub o repositório tenha **front + workflows n8n + stack Docker completa** num único lugar.
+Versionar toda a infraestrutura da VPS dentro do repo (em `infra/`), para que ao conectar `cheffmuro/host-ai-concierge` ao GitHub o repositório tenha **front + workflows n8n + stack Docker completa** num único lugar.
 
 ## Estrutura a criar
 
@@ -85,7 +85,7 @@ Passo a passo curto:
 
 ## Após aprovar
 Crio os arquivos, então você:
-1. Conecta o repo `cheffmuro/Anfitriao` (Connectors → GitHub → Connect project)
+1. Conecta o repo `cheffmuro/host-ai-concierge` (Connectors → GitHub → Connect project)
 2. Faz `git pull` na VPS dentro de `infra/` para subir a stack
 
 ---
