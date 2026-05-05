@@ -81,7 +81,7 @@ interface CwConversation {
 const initials = (name: string) =>
   name.split(" ").slice(0, 2).map((p) => p[0]?.toUpperCase()).join("");
 
-function mapMessage(m: CwMessage): Message {
+export function mapMessage(m: CwMessage): Message {
   const author = m.message_type === 0 ? "customer" : m.content_attributes?.ai ? "ai" : "agent";
   return {
     id: String(m.id),
@@ -101,7 +101,7 @@ function mapMessage(m: CwMessage): Message {
   };
 }
 
-function mapConversation(c: CwConversation): Conversation {
+export function mapConversation(c: CwConversation): Conversation {
   const name = c.meta?.sender?.name || "Cliente";
   return {
     id: String(c.id),
@@ -198,3 +198,21 @@ export async function listAutomations(conversationId: string): Promise<Automatio
 }
 
 export const chatwootInboxId = INBOX_ID;
+
+/** Liga/desliga IA para uma conversa via custom_attributes. */
+export async function setAiHandling(conversationId: string, enabled: boolean): Promise<void> {
+  if (!isLive) return;
+  await http(api(`/conversations/${conversationId}/custom_attributes`), {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ custom_attributes: { ai_handling: enabled } }),
+  });
+}
+
+/** Configuração para o consumer realtime. */
+export const chatwootRealtimeConfig = {
+  baseUrl: BASE,
+  pubsubToken: import.meta.env.VITE_CHATWOOT_PUBSUB_TOKEN as string | undefined,
+  accountId: ACCOUNT_ID,
+};
+
