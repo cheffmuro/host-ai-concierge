@@ -3,7 +3,7 @@
 # Uso: bash evolution/create-instance.sh [NOME_INSTANCIA]
 set -euo pipefail
 
-INSTANCE="${1:-anfitriao}"
+INSTANCE="${1:-host-ai-concierge}"
 EVO_URL="https://evo.${BASE_DOMAIN:?defina BASE_DOMAIN}"
 N8N_WEBHOOK="https://n8n.${BASE_DOMAIN}/webhook/whatsapp-rag"
 KEY="${EVOLUTION_API_KEY:?defina EVOLUTION_API_KEY no .env e exporte antes de rodar}"

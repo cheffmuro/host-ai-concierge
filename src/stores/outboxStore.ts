@@ -46,7 +46,7 @@ export const useOutboxStore = create<OutboxState>()(
       forConversation: (cid) => get().items.filter((i) => i.conversationId === cid),
     }),
     {
-      name: "anfitriao-outbox",
+      name: "host-ai-concierge-outbox",
     },
   ),
 );

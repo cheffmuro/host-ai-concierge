@@ -32,7 +32,7 @@ async function post<T>(url: string | undefined, body: unknown, mock: T): Promise
 export async function triggerHandoff(conversationId: string): Promise<{ ok: true }> {
   return post<{ ok: true }>(
     HANDOFF,
-    { conversationId, source: "anfitriao", at: new Date().toISOString() },
+    { conversationId, source: "host-ai-concierge", at: new Date().toISOString() },
     { ok: true },
   );
 }
@@ -40,7 +40,7 @@ export async function triggerHandoff(conversationId: string): Promise<{ ok: true
 export async function triggerReverseLogistics(orderId: string): Promise<{ ok: true; trackingId: string }> {
   return post<{ ok: true; trackingId: string }>(
     REVERSE,
-    { orderId, source: "anfitriao", at: new Date().toISOString() },
+    { orderId, source: "host-ai-concierge", at: new Date().toISOString() },
     { ok: true, trackingId: `RL${Date.now()}` },
   );
 }

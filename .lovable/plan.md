@@ -26,7 +26,7 @@ infra/
 ## Conteúdo de cada arquivo
 
 ### `infra/docker-compose.yml`
-Serviços com healthchecks, volumes nomeados, rede `anfitriao_net`:
+Serviços com healthchecks, volumes nomeados, rede `host-ai-concierge_net`:
 - `postgres` (compartilhado por Chatwoot + Dify + n8n, com 3 DBs separados via init script)
 - `redis` (compartilhado)
 - `chatwoot-rails` + `chatwoot-sidekiq` (imagem `chatwoot/chatwoot:latest`)
@@ -57,7 +57,7 @@ Lista comentada de todas as variáveis (host base, secret keys, JWT, SMTP, S3 op
 3. `GET https://n8n.../healthz` → 200
 4. `GET https://evo.../instance/fetchInstances` → 200
 5. `POST` no webhook do n8n com payload mock → 200
-6. `OPTIONS` no Chatwoot com `Origin: https://anfitriao.vercel.app` → header `Access-Control-Allow-Origin` presente
+6. `OPTIONS` no Chatwoot com `Origin: https://host-ai-concierge.vercel.app` → header `Access-Control-Allow-Origin` presente
 
 ### `infra/README.md`
 Passo a passo curto:
