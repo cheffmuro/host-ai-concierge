@@ -1,5 +1,5 @@
 {
-  "name": "Anfitriao — WhatsApp → Dify → Chatwoot",
+  "name": "Host AI Concierge — WhatsApp → Dify → Chatwoot",
   "nodes": [
     {
       "parameters": { "httpMethod": "POST", "path": "whatsapp", "responseMode": "responseNode", "options": {} },

@@ -5,7 +5,7 @@ set -euo pipefail
 
 INSTANCE="${1:-host-ai-concierge}"
 EVO_URL="https://evo.${BASE_DOMAIN:?defina BASE_DOMAIN}"
-N8N_WEBHOOK="https://n8n.${BASE_DOMAIN}/webhook/whatsapp-rag"
+N8N_WEBHOOK="https://n8n.${BASE_DOMAIN}/webhook/whatsapp"
 KEY="${EVOLUTION_API_KEY:?defina EVOLUTION_API_KEY no .env e exporte antes de rodar}"
 
 echo "→ Criando instância '$INSTANCE' em $EVO_URL"

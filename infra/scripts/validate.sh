@@ -58,6 +58,15 @@ hdr=$(curl -ksS -X OPTIONS "https://chatwoot.${BASE_DOMAIN}/api/v1/accounts/1/co
   && echo "✅ CORS Chatwoot ($hdr)" && pass=$((pass+1)) \
   || { echo "❌ CORS Chatwoot (sem header)"; fail=$((fail+1)); }
 
+# 7. Webhook n8n WhatsApp (workflow principal ativo após o rename)
+WA_URL="${N8N_WHATSAPP_URL:-https://n8n.${BASE_DOMAIN}/webhook/whatsapp}"
+c=$(curl -ksS -o /dev/null -w "%{http_code}" -X POST "$WA_URL" \
+  -H "Content-Type: application/json" \
+  -d '{"instance":"validate","data":{"key":{"remoteJid":"5511999999999@s.whatsapp.net","id":"x","fromMe":true},"message":{"conversation":"ping"}}}'); \
+  [[ "$c" =~ ^(200|201|204)$ ]] \
+  && echo "✅ Webhook n8n WhatsApp" && pass=$((pass+1)) \
+  || { echo "❌ Webhook n8n WhatsApp ($c)"; fail=$((fail+1)); }
+
 echo
 echo "Resultado: $pass passou / $fail falhou"
 exit $fail
