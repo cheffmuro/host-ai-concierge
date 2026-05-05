@@ -1,0 +1,26 @@
+{
+	email admin@{$BASE_DOMAIN}
+}
+
+chatwoot.{$BASE_DOMAIN} {
+	reverse_proxy chatwoot-rails:3000
+	encode gzip
+}
+
+dify.{$BASE_DOMAIN} {
+	# Web (UI) na raiz, API em /console e /v1 → tudo no mesmo host
+	@api path /console/api/* /api/* /v1/* /files/*
+	reverse_proxy @api dify-api:5001
+	reverse_proxy dify-web:3000
+	encode gzip
+}
+
+n8n.{$BASE_DOMAIN} {
+	reverse_proxy n8n:5678
+	encode gzip
+}
+
+evo.{$BASE_DOMAIN} {
+	reverse_proxy evolution:8080
+	encode gzip
+}
