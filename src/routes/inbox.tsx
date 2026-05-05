@@ -21,10 +21,11 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { sendMessage } from "@/services/chatwootService";
+import { sendMessage, setAiHandling } from "@/services/chatwootService";
 import { triggerHandoff } from "@/services/n8nService";
 import { useOutboxStore } from "@/stores/outboxStore";
 import { useOutboxFlusher } from "@/hooks/useOutboxFlusher";
+import { useChatwootRealtime } from "@/hooks/useChatwootRealtime";
 
 export const Route = createFileRoute("/inbox")({
   head: () => ({
@@ -86,6 +87,32 @@ function InboxPage() {
         ),
       );
       toast.error("Mensagem não pôde ser entregue", { description: item.content.slice(0, 60) });
+    },
+  });
+
+  // Realtime: novas mensagens e mudanças de status vindas do Chatwoot
+  useChatwootRealtime({
+    onMessage: (cid, msg) => {
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== cid) return c;
+          // Dedup: se já existir mensagem com mesmo id, ou otimista (sending) com mesmo conteúdo nos últimos 10s, substitui
+          const idx = c.messages.findIndex(
+            (m) =>
+              m.id === msg.id ||
+              (m.status === "sending" &&
+                m.content === msg.content &&
+                Math.abs(new Date(m.timestamp).getTime() - new Date(msg.timestamp).getTime()) < 10_000),
+          );
+          const messages = idx >= 0
+            ? c.messages.map((m, i) => (i === idx ? msg : m))
+            : [...c.messages, msg];
+          return { ...c, messages, preview: msg.content || c.preview, updatedAt: msg.timestamp };
+        }),
+      );
+    },
+    onConversationUpdated: (cid, patch) => {
+      setConversations((prev) => prev.map((c) => (c.id === cid ? { ...c, ...patch } : c)));
     },
   });
 
@@ -171,8 +198,18 @@ function InboxPage() {
   };
 
   const handleAssume = async (cid: string) => {
-    await triggerHandoff(cid);
+    // Reflexo otimista imediato no painel
     setConversations((prev) => prev.map((c) => (c.id === cid ? { ...c, aiHandling: false } : c)));
+
+    // Dispara em paralelo: webhook n8n + atualização direta no Chatwoot
+    const results = await Promise.allSettled([triggerHandoff(cid), setAiHandling(cid, false)]);
+    const allFailed = results.every((r) => r.status === "rejected");
+    if (allFailed) {
+      // Reverte se nenhum dos dois funcionou
+      setConversations((prev) => prev.map((c) => (c.id === cid ? { ...c, aiHandling: true } : c)));
+      throw new Error("handover_failed");
+    }
+
     appendAutomation(cid, {
       id: uid(),
       type: "handover",
@@ -180,7 +217,12 @@ function InboxPage() {
       description: "Operador assumiu a conversa via painel.",
       status: "success",
       timestamp: new Date().toISOString(),
-      payload: { source: "inbox", agent: "Júlia Vianna" },
+      payload: {
+        source: "inbox",
+        agent: "Júlia Vianna",
+        n8n: results[0].status,
+        chatwoot: results[1].status,
+      },
     });
   };
 
