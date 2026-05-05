@@ -124,3 +124,16 @@ Editados:
 - Não mudo o nome do produto “Anfitrião” na UI.
 - Não toco no schema dos workflows além de `name` — comportamento permanece idêntico.
 - Não reescrevo `bootstrap.sh` (continua válido para instalação inicial; `up-and-check.sh` é a versão idempotente para reuso).
+
+---
+
+## Entrada: rename + migração concluídos
+
+- Compose com healthchecks em `chatwoot-rails`, `dify-api`, `n8n`, `evolution`.
+- `WEBHOOK_GLOBAL_URL` da Evolution e `create-instance.sh` agora apontam para `/webhook/whatsapp` (path real).
+- `validate.sh` ganhou 7º check (POST mock no webhook do WhatsApp).
+- `up-and-check.sh`: sobe stack + valida saúde de todos containers (180s timeout) + roda `validate.sh`.
+- `migrate-from-anfitriao.sh`: backup completo (pg_dump + tar volumes) → stop antiga → copy volumes → up nova → validate. Idempotente. Flags `--yes`, `--auto-rollback`.
+- `migrate-rollback.sh`: derruba nova, sobe antiga; com `<stamp>` restaura tar.gz dos volumes.
+- Outbox store: `onRehydrateStorage` migra payload da chave legada `anfitriao-outbox`.
+- Docs (`README.md`, `infra/README.md`, `n8n-workflows/README.md`) atualizadas com novo path/projeto Docker e seção de migração.
