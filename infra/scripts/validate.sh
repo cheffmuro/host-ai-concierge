@@ -5,7 +5,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 . ./.env
 
-FRONT_ORIGIN="${FRONT_ORIGIN:-https://anfitriao.vercel.app}"
+FRONT_ORIGIN="${FRONT_ORIGIN:-https://host-ai-concierge.vercel.app}"
 N8N_HANDOFF_URL="${N8N_HANDOFF_URL:-https://n8n.${BASE_DOMAIN}/webhook/handoff}"
 
 pass=0; fail=0

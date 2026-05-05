@@ -4,7 +4,7 @@
 # (monte este arquivo via volume ou copie com `docker cp` antes de rodar)
 
 origins = [
-  "https://anfitriao.vercel.app",
+  "https://host-ai-concierge.vercel.app",
   "https://app.suaempresa.com.br",
 ]
 

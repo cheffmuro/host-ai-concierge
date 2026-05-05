@@ -109,7 +109,7 @@ Saída esperada: `Resultado: 6 passou / 0 falhou`.
 Agende no cron:
 
 ```cron
-0 3 * * * /opt/anfitriao/infra/scripts/backup.sh >> /var/log/anfitriao-backup.log 2>&1
+0 3 * * * /opt/host-ai-concierge/infra/scripts/backup.sh >> /var/log/host-ai-concierge-backup.log 2>&1
 ```
 
 Mantém 14 dias em `infra/backups/`.

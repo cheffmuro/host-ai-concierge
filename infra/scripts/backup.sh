@@ -12,14 +12,14 @@ mkdir -p "$DEST"
 
 echo "→ Dump Postgres (chatwoot, dify, n8n)"
 for db in chatwoot dify n8n; do
-  docker compose exec -T postgres pg_dump -U "${POSTGRES_USER:-anfitriao}" "$db" \
+  docker compose exec -T postgres pg_dump -U "${POSTGRES_USER:-host-ai-concierge}" "$db" \
     | gzip > "$DEST/$db.sql.gz"
 done
 
 echo "→ Snapshot volumes"
 for vol in chatwoot_storage dify_storage n8n_data evolution_instances; do
   docker run --rm \
-    -v "anfitriao_${vol}:/data:ro" \
+    -v "host-ai-concierge_${vol}:/data:ro" \
     -v "$(pwd)/$DEST:/backup" \
     alpine tar czf "/backup/${vol}.tar.gz" -C /data .
 done

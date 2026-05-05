@@ -6,7 +6,7 @@
       "id": "wh", "name": "Webhook reverse",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2, "position": [240, 300],
-      "webhookId": "anfitriao-reverse"
+      "webhookId": "host-ai-concierge-reverse"
     },
     {
       "parameters": {

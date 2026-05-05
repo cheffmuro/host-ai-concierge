@@ -125,7 +125,7 @@ export interface DifyAnswer {
 
 export async function askDify(
   query: string,
-  user = "anfitriao-agent",
+  user = "host-ai-concierge-agent",
   conversationId?: string,
 ): Promise<DifyAnswer> {
   if (!isLive) {

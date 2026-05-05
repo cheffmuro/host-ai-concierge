@@ -29,8 +29,8 @@ estiverem definidas — útil para preview.
 ### 2. Back (VPS)
 
 ```bash
-git clone https://github.com/cheffmuro/host-ai-concierge.git /opt/anfitriao
-cd /opt/anfitriao/infra
+git clone https://github.com/cheffmuro/host-ai-concierge.git /opt/host-ai-concierge
+cd /opt/host-ai-concierge/infra
 cp .env.example .env && nano .env
 bash scripts/bootstrap.sh
 ```
