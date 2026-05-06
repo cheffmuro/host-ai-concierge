@@ -83,7 +83,7 @@ services:
     networks: [host-ai-concierge_net]
 
   chatwoot-sidekiq:
-    image: chatwoot/chatwoot:latest
+    image: chatwoot/chatwoot:v3.16.0
     restart: unless-stopped
     depends_on:
       - chatwoot-rails
