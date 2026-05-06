@@ -231,6 +231,9 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    env_file: .env
+    environment:
+      BASE_DOMAIN: ${BASE_DOMAIN}
     ports:
       - "80:80"
       - "443:443"
