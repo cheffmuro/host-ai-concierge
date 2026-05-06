@@ -207,7 +207,14 @@ services:
       SERVER_URL: https://evo.${BASE_DOMAIN}
       AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY}
       AUTHENTICATION_TYPE: apikey
+      DATABASE_PROVIDER: postgresql
       DATABASE_ENABLED: "false"
+      DATABASE_CONNECTION_URI: postgresql://${POSTGRES_USER:-host-ai-concierge}:${POSTGRES_PASSWORD}@postgres:5432/postgres
+      DATABASE_CONNECTION_CLIENT_NAME: evolution
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://:${REDIS_PASSWORD}@redis:6379/2
+      CACHE_REDIS_PREFIX_KEY: evolution
+      CACHE_LOCAL_ENABLED: "false"
       WEBHOOK_GLOBAL_URL: https://n8n.${BASE_DOMAIN}/webhook/whatsapp
       WEBHOOK_GLOBAL_ENABLED: "true"
     volumes:
@@ -224,6 +231,9 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    env_file: .env
+    environment:
+      BASE_DOMAIN: ${BASE_DOMAIN}
     ports:
       - "80:80"
       - "443:443"
