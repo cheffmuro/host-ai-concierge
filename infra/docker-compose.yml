@@ -48,7 +48,7 @@ services:
 
   # ---------- Chatwoot ----------
   chatwoot-rails:
-    image: chatwoot/chatwoot:latest
+    image: chatwoot/chatwoot:v3.16.0
     restart: unless-stopped
     depends_on:
       postgres: { condition: service_healthy }
@@ -65,8 +65,13 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
       FRONTEND_URL: https://chatwoot.${BASE_DOMAIN}
       SECRET_KEY_BASE: ${CHATWOOT_SECRET_KEY_BASE}
+      ACTIVE_STORAGE_SERVICE: local
+      ENABLE_ACCOUNT_SIGNUP: "false"
     entrypoint: docker/entrypoints/rails.sh
-    command: ["bundle", "exec", "rails", "s", "-p", "3000", "-b", "0.0.0.0"]
+    command:
+      - sh
+      - -c
+      - "bundle exec rails db:chatwoot_prepare && bundle exec rails s -p 3000 -b 0.0.0.0"
     volumes:
       - chatwoot_storage:/app/storage
     healthcheck:
