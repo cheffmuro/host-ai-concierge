@@ -69,6 +69,30 @@ function WorkflowsPage() {
     else toast.error(`${wf.label}: ${result.error ?? `status ${result.status}`}`);
   }
 
+  async function downloadJson(wf: WorkflowMeta) {
+    try {
+      const res = await fetch(wf.jsonPath, { cache: "no-store" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const text = await res.text();
+      if (!text.trim()) throw new Error("arquivo vazio");
+      let nodes = 0;
+      try { nodes = JSON.parse(text)?.nodes?.length ?? 0; } catch { /* ignore */ }
+      const blob = new Blob([text], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${wf.key}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      const kb = (text.length / 1024).toFixed(1);
+      toast.success(`${wf.label}: ${kb} KB · ${nodes} nós baixados`);
+    } catch (e) {
+      toast.error(`${wf.label}: falha ao baixar — ${(e as Error).message}`);
+    }
+  }
+
   async function validateAll() {
     for (const wf of WORKFLOWS) {
       if (wf.url) await runValidate(wf);
@@ -140,10 +164,8 @@ function WorkflowsPage() {
                     {busy === "real" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                     Testar com payload real
                   </Button>
-                  <Button asChild size="sm" variant="ghost" className="gap-2">
-                    <a href={wf.jsonPath} download>
-                      <Download className="h-4 w-4" /> Baixar JSON
-                    </a>
+                  <Button size="sm" variant="ghost" className="gap-2" onClick={() => downloadJson(wf)}>
+                    <Download className="h-4 w-4" /> Baixar JSON
                   </Button>
                 </div>
 
