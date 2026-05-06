@@ -164,10 +164,8 @@ function WorkflowsPage() {
                     {busy === "real" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                     Testar com payload real
                   </Button>
-                  <Button asChild size="sm" variant="ghost" className="gap-2">
-                    <a href={wf.jsonPath} download>
-                      <Download className="h-4 w-4" /> Baixar JSON
-                    </a>
+                  <Button size="sm" variant="ghost" className="gap-2" onClick={() => downloadJson(wf)}>
+                    <Download className="h-4 w-4" /> Baixar JSON
                   </Button>
                 </div>
 
