@@ -221,7 +221,7 @@ services:
 
   # Vector store para a Knowledge Base do Dify (RAG).
   weaviate:
-    image: semitechnologies/weaviate:1.24.10
+    image: semitechnologies/weaviate:1.27.0
     restart: unless-stopped
     environment:
       QUERY_DEFAULTS_LIMIT: 25
