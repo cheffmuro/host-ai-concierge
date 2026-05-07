@@ -131,12 +131,15 @@ services:
       APP_WEB_URL: https://dify.${BASE_DOMAIN}
       WEB_API_CORS_ALLOW_ORIGINS: ${DIFY_CORS_ORIGINS}
       CONSOLE_CORS_ALLOW_ORIGINS: ${DIFY_CORS_ORIGINS}
-    # Roda migrations antes de iniciar a API (idempotente).
-    # Sem isso, primeiro boot quebra com "relation dify_setups does not exist".
+    # Boot fix-up:
+    # 1. chown/chmod no volume dify_storage e em /home/dify (evita PermissionDenied
+    #    ao gerar private.pem no setup do tenant inicial).
+    # 2. flask db upgrade idempotente (cria tabelas no primeiro boot).
+    # 3. Entra no entrypoint oficial.
     entrypoint:
       - sh
       - -c
-      - "flask db upgrade && /entrypoint.sh"
+      - "mkdir -p /app/api/storage /home/dify && chown -R 0:0 /app/api/storage /home/dify && chmod -R u+rwX /app/api/storage /home/dify && flask db upgrade && exec /entrypoint.sh"
     volumes:
       - dify_storage:/app/api/storage
     healthcheck:
