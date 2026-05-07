@@ -1,8 +1,7 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts, useRouterState } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/app-sidebar";
 import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "@/hooks/useAuth";
 
 function NotFoundComponent() {
   return (
@@ -12,8 +11,8 @@ function NotFoundComponent() {
         <h2 className="mt-4 text-xl font-medium text-slate-900">Página não encontrada</h2>
         <p className="mt-2 text-sm text-slate-500">A rota solicitada não existe.</p>
         <div className="mt-6">
-          <Link to="/dashboard" className="inline-flex items-center justify-center rounded-sm bg-slate-900 px-4 py-2 text-sm font-medium text-slate-50 hover:bg-slate-800">
-            Ir para o Dashboard
+          <Link to="/" className="inline-flex items-center justify-center rounded-sm bg-slate-900 px-4 py-2 text-sm font-medium text-slate-50 hover:bg-slate-800">
+            Voltar ao início
           </Link>
         </div>
       </div>
@@ -26,15 +25,13 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Anfitrião Concierge OS" },
-      { name: "description", content: "Painel omnichannel de atendimento ao cliente para o mercado de luxo." },
+      { title: "Anfitrião — Concierge OS para atendimento omnichannel" },
+      { name: "description", content: "Plataforma omnichannel com IA concierge para WhatsApp, Instagram, Email e Webchat. Reduza transbordos humanos e eleve a experiência do cliente." },
       { name: "theme-color", content: "#0f172a" },
-      { property: "og:title", content: "Anfitrião Concierge OS" },
-      { name: "twitter:title", content: "Anfitrião Concierge OS" },
-      { property: "og:description", content: "Painel omnichannel de atendimento ao cliente para o mercado de luxo." },
-      { name: "twitter:description", content: "Painel omnichannel de atendimento ao cliente para o mercado de luxo." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a43b3c3b-bf2c-4e4e-a851-13fd89f5b3b9/id-preview-8b2cf238--570deff5-520e-4727-8914-8635b66d97f9.lovable.app-1777989307839.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/a43b3c3b-bf2c-4e4e-a851-13fd89f5b3b9/id-preview-8b2cf238--570deff5-520e-4727-8914-8635b66d97f9.lovable.app-1777989307839.png" },
+      { property: "og:title", content: "Anfitrião — Concierge OS" },
+      { name: "twitter:title", content: "Anfitrião — Concierge OS" },
+      { property: "og:description", content: "IA concierge omnichannel para marcas que tratam o cliente como hóspede." },
+      { name: "twitter:description", content: "IA concierge omnichannel para marcas que tratam o cliente como hóspede." },
       { name: "twitter:card", content: "summary_large_image" },
       { property: "og:type", content: "website" },
     ],
@@ -58,41 +55,11 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-const titles: Record<string, string> = {
-  "/dashboard": "Visão de Comando",
-  "/inbox": "Caixa Omnichannel",
-  "/channels": "Canais de Atendimento",
-  "/brain": "Base de Conhecimento",
-  "/workflows": "Automações",
-};
-
-function AppHeader() {
-  const path = useRouterState({ select: (r) => r.location.pathname });
-  const title = titles[path] ?? "Anfitrião";
-  return (
-    <header className="flex h-12 items-center gap-3 border-b border-border/60 bg-white px-4">
-      <SidebarTrigger className="text-slate-700" />
-      <div className="h-4 w-px bg-border/60" />
-      <span className="text-[11px] uppercase tracking-[0.18em] text-slate-500">Anfitrião</span>
-      <span className="text-slate-300">/</span>
-      <span className="text-sm font-medium text-slate-900">{title}</span>
-    </header>
-  );
-}
-
 function RootComponent() {
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-slate-50">
-        <AppSidebar />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <AppHeader />
-          <main className="flex-1 min-h-0">
-            <Outlet />
-          </main>
-        </div>
-      </div>
+    <AuthProvider>
+      <Outlet />
       <Toaster />
-    </SidebarProvider>
+    </AuthProvider>
   );
 }
