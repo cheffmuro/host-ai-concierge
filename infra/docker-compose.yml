@@ -195,6 +195,45 @@ services:
       GIN_MODE: release
     networks: [host-ai-concierge_net]
 
+  # Plugin daemon — obrigatório a partir do Dify 1.0
+  # Sem isso, o console mostra "Failed to request plugin daemon".
+  dify-plugin-daemon:
+    image: langgenius/dify-plugin-daemon:0.0.6-local
+    restart: unless-stopped
+    user: "0:0"
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${POSTGRES_USER:-host-ai-concierge}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_DATABASE: dify_plugin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SERVER_PORT: 5002
+      SERVER_KEY: ${DIFY_PLUGIN_DAEMON_KEY:-lYkiYYRyG0qZQ5XkZl6jCNGKzPWAOVNm}
+      DIFY_INNER_API_URL: http://dify-api:5001
+      DIFY_INNER_API_KEY: ${DIFY_INNER_API_KEY:-QaHbTe77CtuXmsfyhR7+vRjI/+XbRHAWlyrx7+RVDUw=}
+      PLUGIN_REMOTE_INSTALLING_HOST: 0.0.0.0
+      PLUGIN_REMOTE_INSTALLING_PORT: 5003
+      PLUGIN_WORKING_PATH: /app/storage/cwd
+      FORCE_VERIFYING_SIGNATURE: "false"
+      PYTHON_ENV_INIT_TIMEOUT: 120
+      PLUGIN_MAX_PACKAGE_SIZE: 52428800
+      PIP_MIRROR_URL: ""
+      PLATFORM: local
+      ROUTINE_POOL_SIZE: 10000
+      LIFETIME_COLLECTION_HEARTBEAT_INTERVAL: 5
+      LIFETIME_COLLECTION_GC_INTERVAL: 60
+      LIFETIME_STATE_GC_INTERVAL: 300
+      DIFY_PLUGIN_SERVER_PORT: 5002
+    volumes:
+      - dify_plugin_storage:/app/storage
+    networks: [host-ai-concierge_net]
+
   # ---------- n8n ----------
   n8n:
     image: n8nio/n8n:latest
