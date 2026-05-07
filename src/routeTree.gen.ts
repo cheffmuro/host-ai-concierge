@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkflowsRouteImport } from './routes/workflows'
 import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as ChannelsRouteImport } from './routes/channels'
 import { Route as BrainRouteImport } from './routes/brain'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -30,6 +31,11 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChannelsRoute = ChannelsRouteImport.update({
+  id: '/channels',
+  path: '/channels',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BrainRoute = BrainRouteImport.update({
   id: '/brain',
   path: '/brain',
@@ -44,6 +50,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/brain': typeof BrainRoute
+  '/channels': typeof ChannelsRoute
   '/dashboard': typeof DashboardRoute
   '/inbox': typeof InboxRoute
   '/workflows': typeof WorkflowsRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/brain': typeof BrainRoute
+  '/channels': typeof ChannelsRoute
   '/dashboard': typeof DashboardRoute
   '/inbox': typeof InboxRoute
   '/workflows': typeof WorkflowsRoute
@@ -59,21 +67,36 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/brain': typeof BrainRoute
+  '/channels': typeof ChannelsRoute
   '/dashboard': typeof DashboardRoute
   '/inbox': typeof InboxRoute
   '/workflows': typeof WorkflowsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/brain' | '/dashboard' | '/inbox' | '/workflows'
+  fullPaths:
+    | '/'
+    | '/brain'
+    | '/channels'
+    | '/dashboard'
+    | '/inbox'
+    | '/workflows'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/brain' | '/dashboard' | '/inbox' | '/workflows'
-  id: '__root__' | '/' | '/brain' | '/dashboard' | '/inbox' | '/workflows'
+  to: '/' | '/brain' | '/channels' | '/dashboard' | '/inbox' | '/workflows'
+  id:
+    | '__root__'
+    | '/'
+    | '/brain'
+    | '/channels'
+    | '/dashboard'
+    | '/inbox'
+    | '/workflows'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BrainRoute: typeof BrainRoute
+  ChannelsRoute: typeof ChannelsRoute
   DashboardRoute: typeof DashboardRoute
   InboxRoute: typeof InboxRoute
   WorkflowsRoute: typeof WorkflowsRoute
@@ -102,6 +125,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/channels': {
+      id: '/channels'
+      path: '/channels'
+      fullPath: '/channels'
+      preLoaderRoute: typeof ChannelsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/brain': {
       id: '/brain'
       path: '/brain'
@@ -122,6 +152,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BrainRoute: BrainRoute,
+  ChannelsRoute: ChannelsRoute,
   DashboardRoute: DashboardRoute,
   InboxRoute: InboxRoute,
   WorkflowsRoute: WorkflowsRoute,
