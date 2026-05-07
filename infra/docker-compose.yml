@@ -150,6 +150,7 @@ services:
   dify-worker:
     image: langgenius/dify-api:latest
     restart: unless-stopped
+    user: "0:0"
     depends_on: [dify-api]
     env_file: .env
     environment:
