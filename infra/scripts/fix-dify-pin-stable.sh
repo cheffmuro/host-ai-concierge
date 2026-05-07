@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Pina o stack Dify em combo estável: api/web 1.13.3 + plugin-daemon 0.5.3-local
-# + sandbox 0.2.14. Resolve:
+# Pina o stack Dify em combo estável: api/web 1.14.0 + plugin-daemon 0.5.3-local
+# + sandbox 0.2.14. (Banco já tem migração 227822d22895 do 1.14.0.) Resolve:
 #   - 500 em /datasets/create (rota /management/datasources passa a existir no
 #     plugin-daemon 0.3.x+).
 #   - "Can't locate revision 227822d22895" do downgrade para 1.4.0 (o banco já
