@@ -179,6 +179,9 @@ services:
       REDIS_HOST: redis
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       SECRET_KEY: ${DIFY_SECRET_KEY}
+      VECTOR_STORE: weaviate
+      WEAVIATE_ENDPOINT: http://weaviate:8080
+      WEAVIATE_API_KEY: ${WEAVIATE_API_KEY:-WVF5YThaHlkYwhGUSmCRgsX3tD5ngdN8pkih}
     volumes:
       - dify_storage:/app/api/storage
     networks: [host-ai-concierge_net]
