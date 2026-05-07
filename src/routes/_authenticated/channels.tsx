@@ -21,7 +21,7 @@ import {
   type ChannelConnection, type ChannelKind,
 } from "@/services/channelsService";
 
-export const Route = createFileRoute("/channels")({
+export const Route = createFileRoute("/_authenticated/channels")({
   head: () => ({
     meta: [
       { title: "Canais — Anfitrião" },

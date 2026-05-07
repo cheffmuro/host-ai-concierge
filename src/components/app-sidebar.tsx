@@ -1,5 +1,5 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, Inbox, BrainCircuit, Workflow, Plug } from "lucide-react";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { LayoutDashboard, Inbox, BrainCircuit, Workflow, Plug, LogOut } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -12,6 +12,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/hooks/useAuth";
 
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -26,6 +27,10 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const isActive = (p: string) => currentPath === p || currentPath.startsWith(p + "/");
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const initials = (user?.user_metadata?.display_name || user?.email || "?").slice(0, 2).toUpperCase();
+  const name = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Usuário";
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/60">
@@ -62,13 +67,22 @@ export function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="border-t border-border/60">
         <div className="flex items-center gap-3 px-2 py-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-700">
-            JV
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-xs font-medium text-slate-700 shrink-0">
+            {initials}
           </div>
           {!collapsed && (
-            <div className="flex flex-col leading-tight">
-              <span className="text-sm text-slate-900">Júlia Vianna</span>
-              <span className="text-[10px] uppercase tracking-[0.18em] text-slate-500">On duty</span>
+            <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+              <div className="flex min-w-0 flex-col leading-tight">
+                <span className="truncate text-sm text-slate-900">{name}</span>
+                <span className="truncate text-[10px] uppercase tracking-[0.18em] text-slate-500">{user?.email}</span>
+              </div>
+              <button
+                onClick={async () => { await signOut(); navigate({ to: "/" }); }}
+                className="text-slate-500 hover:text-slate-900 shrink-0"
+                aria-label="Sair"
+              >
+                <LogOut className="h-4 w-4" strokeWidth={1.5} />
+              </button>
             </div>
           )}
         </div>
