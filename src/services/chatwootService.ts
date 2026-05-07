@@ -6,6 +6,7 @@
  * Docs: https://www.chatwoot.com/developers/api/
  */
 import { mockConversations } from "@/mocks/data";
+import { USE_MOCKS } from "@/lib/mocks";
 import type {
   Attachment,
   AutomationEvent,
@@ -21,6 +22,7 @@ const ACCOUNT_ID = import.meta.env.VITE_CHATWOOT_ACCOUNT_ID as string | undefine
 const INBOX_ID = import.meta.env.VITE_CHATWOOT_INBOX_ID as string | undefined;
 
 const isLive = Boolean(BASE && TOKEN && ACCOUNT_ID);
+const useMockFallback = () => !isLive && USE_MOCKS;
 const delay = (ms = 200) => new Promise((r) => setTimeout(r, ms));
 
 const api = (path: string) => `${BASE}/api/v1/accounts/${ACCOUNT_ID}${path}`;
