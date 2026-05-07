@@ -132,6 +132,14 @@ services:
       APP_WEB_URL: https://dify.${BASE_DOMAIN}
       WEB_API_CORS_ALLOW_ORIGINS: ${DIFY_CORS_ORIGINS}
       CONSOLE_CORS_ALLOW_ORIGINS: ${DIFY_CORS_ORIGINS}
+      # Plugin daemon (necessário a partir do Dify 1.0)
+      PLUGIN_DAEMON_URL: http://dify-plugin-daemon:5002
+      PLUGIN_DAEMON_KEY: ${DIFY_PLUGIN_DAEMON_KEY:-lYkiYYRyG0qZQ5XkZl6jCNGKzPWAOVNm}
+      PLUGIN_REMOTE_INSTALL_HOST: dify-plugin-daemon
+      PLUGIN_REMOTE_INSTALL_PORT: 5003
+      INNER_API_KEY_FOR_PLUGIN: ${DIFY_INNER_API_KEY:-QaHbTe77CtuXmsfyhR7+vRjI/+XbRHAWlyrx7+RVDUw=}
+      MARKETPLACE_ENABLED: "true"
+      MARKETPLACE_API_URL: https://marketplace.dify.ai
     # Boot fix-up:
     # 1. chown/chmod no volume dify_storage e em /home/dify (evita PermissionDenied
     #    ao gerar private.pem no setup do tenant inicial).
