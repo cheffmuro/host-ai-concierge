@@ -107,7 +107,7 @@ services:
 
   # ---------- Dify ----------
   dify-api:
-    image: langgenius/dify-api:1.13.3
+    image: langgenius/dify-api:1.14.0
     restart: unless-stopped
     # Roda como root para evitar PermissionDenied no volume dify_storage
     # (a imagem usa um UID interno que não bate com o owner do named volume).
@@ -165,7 +165,7 @@ services:
     networks: [host-ai-concierge_net]
 
   dify-worker:
-    image: langgenius/dify-api:1.13.3
+    image: langgenius/dify-api:1.14.0
     restart: unless-stopped
     user: "0:0"
     depends_on: [dify-api]
@@ -187,7 +187,7 @@ services:
     networks: [host-ai-concierge_net]
 
   dify-web:
-    image: langgenius/dify-web:1.13.3
+    image: langgenius/dify-web:1.14.0
     restart: unless-stopped
     depends_on: [dify-api]
     environment:
