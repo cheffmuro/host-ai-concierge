@@ -10,6 +10,7 @@ volumes:
   chatwoot_storage:
   dify_storage:
   dify_plugin_storage:
+  weaviate_data:
   n8n_data:
   evolution_instances:
   caddy_data:
