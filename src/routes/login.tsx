@@ -77,6 +77,9 @@ function LoginPage() {
           <Button type="submit" disabled={loading} className="w-full rounded-sm">
             {loading ? "Entrando…" : "Entrar"}
           </Button>
+          <div className="text-right">
+            <Link to="/reset-password" className="text-xs text-slate-500 hover:text-slate-900">Esqueci minha senha</Link>
+          </div>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-600">
