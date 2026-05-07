@@ -130,7 +130,7 @@ export function mapConversation(c: CwConversation): Conversation {
 // --- Public API -------------------------------------------------------------
 
 export async function listConversations(): Promise<Conversation[]> {
-  if (!isLive) { await delay(); return mockConversations; }
+  if (!isLive) { await delay(); return useMockFallback() ? mockConversations : []; }
   const data = await http<{ data: { payload: CwConversation[] } }>(
     api(`/conversations?status=open&assignee_type=me&page=1`),
     { headers: headers() },
@@ -139,7 +139,7 @@ export async function listConversations(): Promise<Conversation[]> {
 }
 
 export async function getConversation(id: string): Promise<Conversation | undefined> {
-  if (!isLive) { await delay(); return mockConversations.find((c) => c.id === id); }
+  if (!isLive) { await delay(); return useMockFallback() ? mockConversations.find((c) => c.id === id) : undefined; }
   const c = await http<CwConversation>(api(`/conversations/${id}`), { headers: headers() });
   const msgs = await http<{ payload: CwMessage[] }>(api(`/conversations/${id}/messages`), { headers: headers() });
   return mapConversation({ ...c, messages: msgs.payload });
@@ -195,7 +195,7 @@ export async function assignAgent(conversationId: string, agentId: string): Prom
 }
 
 export async function listAutomations(conversationId: string): Promise<AutomationEvent[]> {
-  if (!isLive) return mockConversations.find((c) => c.id === conversationId)?.context.automations ?? [];
+  if (!isLive) return useMockFallback() ? (mockConversations.find((c) => c.id === conversationId)?.context.automations ?? []) : [];
   return [];
 }
 
