@@ -27,6 +27,10 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const isActive = (p: string) => currentPath === p || currentPath.startsWith(p + "/");
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const initials = (user?.user_metadata?.display_name || user?.email || "?").slice(0, 2).toUpperCase();
+  const name = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Usuário";
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/60">
