@@ -21,6 +21,8 @@ const titles: Record<string, string> = {
   "/channels": "Canais de Atendimento",
   "/brain": "Base de Conhecimento",
   "/workflows": "Automações",
+  "/settings/integrations": "Integrações",
+  "/profile": "Perfil",
 };
 
 function AuthenticatedLayout() {
