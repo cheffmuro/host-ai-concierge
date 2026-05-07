@@ -190,6 +190,14 @@ services:
       VECTOR_STORE: weaviate
       WEAVIATE_ENDPOINT: http://weaviate:8080
       WEAVIATE_API_KEY: ${WEAVIATE_API_KEY:-WVF5YThaHlkYwhGUSmCRgsX3tD5ngdN8pkih}
+      # Plugin daemon (idêntico ao dify-api — worker chama o daemon ao indexar/embutir)
+      PLUGIN_DAEMON_URL: http://dify-plugin-daemon:5002
+      PLUGIN_DAEMON_KEY: ${DIFY_PLUGIN_DAEMON_KEY:-lYkiYYRyG0qZQ5XkZl6jCNGKzPWAOVNm}
+      PLUGIN_REMOTE_INSTALL_HOST: dify-plugin-daemon
+      PLUGIN_REMOTE_INSTALL_PORT: 5003
+      INNER_API_KEY_FOR_PLUGIN: ${DIFY_INNER_API_KEY:-QaHbTe77CtuXmsfyhR7+vRjI/+XbRHAWlyrx7+RVDUw=}
+      MARKETPLACE_ENABLED: "true"
+      MARKETPLACE_API_URL: https://marketplace.dify.ai
     volumes:
       - dify_storage:/app/api/storage
     networks: [host-ai-concierge_net]
