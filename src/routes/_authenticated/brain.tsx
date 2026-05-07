@@ -13,7 +13,7 @@ import { mockKnowledgeDocs, mockQA } from "@/mocks/data";
 import type { KnowledgeDoc, QAPair } from "@/services/types";
 import { addQAPair, uploadDocument } from "@/services/difyService";
 
-export const Route = createFileRoute("/brain")({
+export const Route = createFileRoute("/_authenticated/brain")({
   head: () => ({
     meta: [
       { title: "Brain — Anfitrião" },

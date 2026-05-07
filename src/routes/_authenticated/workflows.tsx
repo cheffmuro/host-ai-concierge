@@ -20,7 +20,7 @@ import {
   type WorkflowMeta,
 } from "@/services/n8nService";
 
-export const Route = createFileRoute("/workflows")({
+export const Route = createFileRoute("/_authenticated/workflows")({
   head: () => ({
     meta: [
       { title: "Workflows n8n — Anfitrião" },

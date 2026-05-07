@@ -27,7 +27,7 @@ import { useOutboxStore } from "@/stores/outboxStore";
 import { useOutboxFlusher } from "@/hooks/useOutboxFlusher";
 import { useChatwootRealtime } from "@/hooks/useChatwootRealtime";
 
-export const Route = createFileRoute("/inbox")({
+export const Route = createFileRoute("/_authenticated/inbox")({
   head: () => ({
     meta: [
       { title: "Inbox — Anfitrião" },
