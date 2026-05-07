@@ -6,6 +6,7 @@
  *       https://docs.dify.ai/guides/application-publishing/developing-with-apis
  */
 import { mockKnowledgeDocs, mockQA } from "@/mocks/data";
+import { USE_MOCKS } from "@/lib/mocks";
 import type { KnowledgeDoc, QAPair } from "@/services/types";
 
 const BASE = import.meta.env.VITE_DIFY_URL as string | undefined;
@@ -38,7 +39,7 @@ const statusMap = (s?: string): KnowledgeDoc["status"] =>
   s === "indexed" || s === "available" ? "indexed" : s === "error" ? "error" : "indexing";
 
 export async function listKnowledgeDocuments(): Promise<KnowledgeDoc[]> {
-  if (!isLive) { await delay(); return mockKnowledgeDocs; }
+  if (!isLive) { await delay(); return USE_MOCKS ? mockKnowledgeDocs : []; }
   const data = await http<{ data: DifyDoc[] }>(
     `${BASE}/v1/datasets/${DATASET}/documents?page=1&limit=50`,
     { headers: auth() },
@@ -100,10 +101,8 @@ export async function removeDocument(id: string): Promise<void> {
 // --- Q&A pairs (segments) ---------------------------------------------------
 
 export async function listQAPairs(): Promise<QAPair[]> {
-  // Endpoint varia conforme tipo do dataset (Q&A vs texto). Para evitar
-  // chamadas que falhem, mantém mock até que o usuário confirme tipo Q&A.
   await delay();
-  return mockQA;
+  return USE_MOCKS ? mockQA : [];
 }
 
 export async function addQAPair(question: string, answer: string): Promise<QAPair> {
