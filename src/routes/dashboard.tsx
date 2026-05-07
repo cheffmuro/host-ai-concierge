@@ -39,6 +39,21 @@ function Metric({ label, value, delta, positive }: { label: string; value: strin
 }
 
 function DashboardPage() {
+  useEffect(() => {
+    const BASE_URL = "https://app.chatwoot.com";
+    const w = window as unknown as { chatwootSDK?: { run: (o: { websiteToken: string; baseUrl: string }) => void } };
+    const existing = document.getElementById("chatwoot-sdk") as HTMLScriptElement | null;
+    const run = () => w.chatwootSDK?.run({ websiteToken: "mock_tok_i4fnu8kx", baseUrl: BASE_URL });
+    if (existing) { run(); return; }
+    const g = document.createElement("script");
+    g.id = "chatwoot-sdk";
+    g.src = BASE_URL + "/packs/js/sdk.js";
+    g.defer = true;
+    g.async = true;
+    g.onload = run;
+    document.body.appendChild(g);
+  }, []);
+
   const m = mockMetrics;
   const handoffs = mockConversations.filter((c) => !c.aiHandling).slice(0, 4);
 
