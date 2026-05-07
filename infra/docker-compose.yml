@@ -107,12 +107,16 @@ services:
   dify-api:
     image: langgenius/dify-api:latest
     restart: unless-stopped
+    # Roda como root para evitar PermissionDenied no volume dify_storage
+    # (a imagem usa um UID interno que não bate com o owner do named volume).
+    user: "0:0"
     depends_on:
       postgres: { condition: service_healthy }
       redis:    { condition: service_healthy }
     env_file: .env
     environment:
       MODE: api
+      STORAGE_LOCAL_PATH: /app/api/storage
       DB_HOST: postgres
       DB_DATABASE: dify
       DB_USERNAME: ${POSTGRES_USER:-host-ai-concierge}
@@ -146,6 +150,7 @@ services:
   dify-worker:
     image: langgenius/dify-api:latest
     restart: unless-stopped
+    user: "0:0"
     depends_on: [dify-api]
     env_file: .env
     environment:
