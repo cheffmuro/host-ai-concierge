@@ -1,17 +1,57 @@
 /**
  * n8n webhook triggers + validação dos workflows.
+ * URLs e token podem vir de env vars (build) ou serem configurados em runtime via localStorage.
  */
 
-const HANDOFF = import.meta.env.VITE_N8N_WEBHOOK_HANDOFF as string | undefined;
-const REVERSE = import.meta.env.VITE_N8N_WEBHOOK_REVERSE_LOGISTICS as string | undefined;
-const WHATSAPP = import.meta.env.VITE_N8N_WEBHOOK_WHATSAPP as string | undefined;
-const TOKEN = import.meta.env.VITE_N8N_WEBHOOK_TOKEN as string | undefined;
+const ENV_HANDOFF = import.meta.env.VITE_N8N_WEBHOOK_HANDOFF as string | undefined;
+const ENV_REVERSE = import.meta.env.VITE_N8N_WEBHOOK_REVERSE_LOGISTICS as string | undefined;
+const ENV_WHATSAPP = import.meta.env.VITE_N8N_WEBHOOK_WHATSAPP as string | undefined;
+const ENV_TOKEN = import.meta.env.VITE_N8N_WEBHOOK_TOKEN as string | undefined;
 
 const delay = (ms = 200) => new Promise((r) => setTimeout(r, ms));
 
+export type WorkflowKey = "handoff" | "reverse-logistics" | "whatsapp-rag-chatwoot";
+
+const ENV_URLS: Record<WorkflowKey, string | undefined> = {
+  "handoff": ENV_HANDOFF,
+  "reverse-logistics": ENV_REVERSE,
+  "whatsapp-rag-chatwoot": ENV_WHATSAPP,
+};
+
+const LS_URL = (key: WorkflowKey) => `n8n:webhook:${key}`;
+const LS_TOKEN = "n8n:token";
+
+function ls(): Storage | null {
+  if (typeof window === "undefined") return null;
+  try { return window.localStorage; } catch { return null; }
+}
+
+export function getWorkflowUrl(key: WorkflowKey): string | undefined {
+  const stored = ls()?.getItem(LS_URL(key)) ?? undefined;
+  return (stored && stored.trim()) || ENV_URLS[key];
+}
+
+export function setWorkflowUrl(key: WorkflowKey, url: string): void {
+  const s = ls(); if (!s) return;
+  if (url.trim()) s.setItem(LS_URL(key), url.trim());
+  else s.removeItem(LS_URL(key));
+}
+
+export function getWebhookToken(): string | undefined {
+  const stored = ls()?.getItem(LS_TOKEN) ?? undefined;
+  return (stored && stored.trim()) || ENV_TOKEN;
+}
+
+export function setWebhookToken(token: string): void {
+  const s = ls(); if (!s) return;
+  if (token.trim()) s.setItem(LS_TOKEN, token.trim());
+  else s.removeItem(LS_TOKEN);
+}
+
 function buildHeaders(): HeadersInit {
   const h: Record<string, string> = { "Content-Type": "application/json" };
-  if (TOKEN) h["X-Webhook-Token"] = TOKEN;
+  const token = getWebhookToken();
+  if (token) h["X-Webhook-Token"] = token;
   return h;
 }
 
@@ -29,7 +69,7 @@ async function post<T>(url: string | undefined, body: unknown, mock: T): Promise
 
 export async function triggerHandoff(conversationId: string): Promise<{ ok: true }> {
   return post<{ ok: true }>(
-    HANDOFF,
+    getWorkflowUrl("handoff"),
     { conversationId, source: "host-ai-concierge", at: new Date().toISOString() },
     { ok: true },
   );
@@ -37,7 +77,7 @@ export async function triggerHandoff(conversationId: string): Promise<{ ok: true
 
 export async function triggerReverseLogistics(orderId: string): Promise<{ ok: true; trackingId: string }> {
   return post<{ ok: true; trackingId: string }>(
-    REVERSE,
+    getWorkflowUrl("reverse-logistics"),
     { orderId, source: "host-ai-concierge", at: new Date().toISOString() },
     { ok: true, trackingId: `RL${Date.now()}` },
   );
@@ -45,14 +85,11 @@ export async function triggerReverseLogistics(orderId: string): Promise<{ ok: tr
 
 // ---------------- Workflows manager ----------------
 
-export type WorkflowKey = "handoff" | "reverse-logistics" | "whatsapp-rag-chatwoot";
-
 export interface WorkflowMeta {
   key: WorkflowKey;
   label: string;
   description: string;
   webhookPath: string;
-  url: string | undefined;
   jsonPath: string; // download path under /public
   envVar: string;
   samplePayload: Record<string, unknown>;
@@ -64,7 +101,6 @@ export const WORKFLOWS: WorkflowMeta[] = [
     label: "Handoff humano",
     description: "Desativa o flag ai_handling no Chatwoot e grava nota privada quando o atendente assume.",
     webhookPath: "/webhook/handoff",
-    url: HANDOFF,
     jsonPath: "/n8n/handoff.json",
     envVar: "VITE_N8N_WEBHOOK_HANDOFF",
     samplePayload: { conversationId: "test-conv-1", source: "host-ai-concierge", at: new Date().toISOString() },
@@ -74,7 +110,6 @@ export const WORKFLOWS: WorkflowMeta[] = [
     label: "Logística reversa",
     description: "Gera trackingId para devolução; ponto de integração com ERP/Shopify.",
     webhookPath: "/webhook/reverse-logistics",
-    url: REVERSE,
     jsonPath: "/n8n/reverse-logistics.json",
     envVar: "VITE_N8N_WEBHOOK_REVERSE_LOGISTICS",
     samplePayload: { orderId: "TEST-123", source: "host-ai-concierge", at: new Date().toISOString() },
@@ -84,7 +119,6 @@ export const WORKFLOWS: WorkflowMeta[] = [
     label: "WhatsApp · RAG · Chatwoot",
     description: "Recebe mensagens da Evolution, consulta Dify (RAG) e responde via WhatsApp + Chatwoot.",
     webhookPath: "/webhook/whatsapp",
-    url: WHATSAPP,
     jsonPath: "/n8n/whatsapp-rag-chatwoot.json",
     envVar: "VITE_N8N_WEBHOOK_WHATSAPP",
     samplePayload: {
