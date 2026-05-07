@@ -107,7 +107,7 @@ services:
 
   # ---------- Dify ----------
   dify-api:
-    image: langgenius/dify-api:1.4.0
+    image: langgenius/dify-api:1.13.3
     restart: unless-stopped
     # Roda como root para evitar PermissionDenied no volume dify_storage
     # (a imagem usa um UID interno que não bate com o owner do named volume).
@@ -165,7 +165,7 @@ services:
     networks: [host-ai-concierge_net]
 
   dify-worker:
-    image: langgenius/dify-api:1.4.0
+    image: langgenius/dify-api:1.13.3
     restart: unless-stopped
     user: "0:0"
     depends_on: [dify-api]
@@ -187,7 +187,7 @@ services:
     networks: [host-ai-concierge_net]
 
   dify-web:
-    image: langgenius/dify-web:1.4.0
+    image: langgenius/dify-web:1.13.3
     restart: unless-stopped
     depends_on: [dify-api]
     environment:
@@ -196,7 +196,7 @@ services:
     networks: [host-ai-concierge_net]
 
   dify-sandbox:
-    image: langgenius/dify-sandbox:latest
+    image: langgenius/dify-sandbox:0.2.14
     restart: unless-stopped
     environment:
       API_KEY: ${DIFY_SANDBOX_API_KEY}
@@ -225,7 +225,7 @@ services:
   # Plugin daemon — obrigatório a partir do Dify 1.0
   # Sem isso, o console mostra "Failed to request plugin daemon".
   dify-plugin-daemon:
-    image: langgenius/dify-plugin-daemon:0.1.2-local
+    image: langgenius/dify-plugin-daemon:0.5.3-local
     restart: unless-stopped
     user: "0:0"
     depends_on:
