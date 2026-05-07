@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { mockMetrics, mockConversations } from "@/mocks/data";
+import { USE_MOCKS } from "@/lib/mocks";
 import { Badge } from "@/components/ui/badge";
 import { ChannelIcon, channelLabel } from "@/components/channel-icon";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
@@ -39,23 +39,15 @@ function Metric({ label, value, delta, positive }: { label: string; value: strin
 }
 
 function DashboardPage() {
-  useEffect(() => {
-    const BASE_URL = "https://app.chatwoot.com";
-    const w = window as unknown as { chatwootSDK?: { run: (o: { websiteToken: string; baseUrl: string }) => void } };
-    const existing = document.getElementById("chatwoot-sdk") as HTMLScriptElement | null;
-    const run = () => w.chatwootSDK?.run({ websiteToken: "mock_tok_i4fnu8kx", baseUrl: BASE_URL });
-    if (existing) { run(); return; }
-    const g = document.createElement("script");
-    g.id = "chatwoot-sdk";
-    g.src = BASE_URL + "/packs/js/sdk.js";
-    g.defer = true;
-    g.async = true;
-    g.onload = run;
-    document.body.appendChild(g);
-  }, []);
-
-  const m = mockMetrics;
-  const handoffs = mockConversations.filter((c) => !c.aiHandling).slice(0, 4);
+  const empty = !USE_MOCKS;
+  const m = USE_MOCKS ? mockMetrics : {
+    resolutionRate: 0,
+    avgHandleTime: "—",
+    humanHandoffs: 0,
+    activeConversations: 0,
+    weeklyVolume: [] as Array<{ day: string; automated: number; human: number }>,
+  };
+  const handoffs = USE_MOCKS ? mockConversations.filter((c) => !c.aiHandling).slice(0, 4) : [];
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
