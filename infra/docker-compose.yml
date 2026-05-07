@@ -124,7 +124,11 @@ services:
       DB_USERNAME: ${POSTGRES_USER:-host-ai-concierge}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       REDIS_HOST: redis
+      REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_USE_SSL: "false"
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      BROKER_USE_SSL: "false"
       SECRET_KEY: ${DIFY_SECRET_KEY}
       CONSOLE_API_URL: https://dify.${BASE_DOMAIN}
       CONSOLE_WEB_URL: https://dify.${BASE_DOMAIN}
@@ -177,7 +181,11 @@ services:
       DB_USERNAME: ${POSTGRES_USER:-host-ai-concierge}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       REDIS_HOST: redis
+      REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_USE_SSL: "false"
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      BROKER_USE_SSL: "false"
       SECRET_KEY: ${DIFY_SECRET_KEY}
       VECTOR_STORE: weaviate
       WEAVIATE_ENDPOINT: http://weaviate:8080
