@@ -225,7 +225,7 @@ services:
   # Plugin daemon — obrigatório a partir do Dify 1.0
   # Sem isso, o console mostra "Failed to request plugin daemon".
   dify-plugin-daemon:
-    image: langgenius/dify-plugin-daemon:0.0.6-local
+    image: langgenius/dify-plugin-daemon:0.2.0-local
     restart: unless-stopped
     user: "0:0"
     depends_on:
