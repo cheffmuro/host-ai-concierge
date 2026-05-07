@@ -61,7 +61,9 @@ function RootShell({ children }: { children: React.ReactNode }) {
 const titles: Record<string, string> = {
   "/dashboard": "Visão de Comando",
   "/inbox": "Caixa Omnichannel",
+  "/channels": "Canais de Atendimento",
   "/brain": "Base de Conhecimento",
+  "/workflows": "Automações",
 };
 
 function AppHeader() {
