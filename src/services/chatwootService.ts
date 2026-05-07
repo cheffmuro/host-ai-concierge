@@ -6,6 +6,7 @@
  * Docs: https://www.chatwoot.com/developers/api/
  */
 import { mockConversations } from "@/mocks/data";
+import { USE_MOCKS } from "@/lib/mocks";
 import type {
   Attachment,
   AutomationEvent,
@@ -21,6 +22,7 @@ const ACCOUNT_ID = import.meta.env.VITE_CHATWOOT_ACCOUNT_ID as string | undefine
 const INBOX_ID = import.meta.env.VITE_CHATWOOT_INBOX_ID as string | undefined;
 
 const isLive = Boolean(BASE && TOKEN && ACCOUNT_ID);
+const useMockFallback = () => !isLive && USE_MOCKS;
 const delay = (ms = 200) => new Promise((r) => setTimeout(r, ms));
 
 const api = (path: string) => `${BASE}/api/v1/accounts/${ACCOUNT_ID}${path}`;
@@ -128,7 +130,7 @@ export function mapConversation(c: CwConversation): Conversation {
 // --- Public API -------------------------------------------------------------
 
 export async function listConversations(): Promise<Conversation[]> {
-  if (!isLive) { await delay(); return mockConversations; }
+  if (!isLive) { await delay(); return useMockFallback() ? mockConversations : []; }
   const data = await http<{ data: { payload: CwConversation[] } }>(
     api(`/conversations?status=open&assignee_type=me&page=1`),
     { headers: headers() },
@@ -137,7 +139,7 @@ export async function listConversations(): Promise<Conversation[]> {
 }
 
 export async function getConversation(id: string): Promise<Conversation | undefined> {
-  if (!isLive) { await delay(); return mockConversations.find((c) => c.id === id); }
+  if (!isLive) { await delay(); return useMockFallback() ? mockConversations.find((c) => c.id === id) : undefined; }
   const c = await http<CwConversation>(api(`/conversations/${id}`), { headers: headers() });
   const msgs = await http<{ payload: CwMessage[] }>(api(`/conversations/${id}/messages`), { headers: headers() });
   return mapConversation({ ...c, messages: msgs.payload });
@@ -193,7 +195,7 @@ export async function assignAgent(conversationId: string, agentId: string): Prom
 }
 
 export async function listAutomations(conversationId: string): Promise<AutomationEvent[]> {
-  if (!isLive) return mockConversations.find((c) => c.id === conversationId)?.context.automations ?? [];
+  if (!isLive) return useMockFallback() ? (mockConversations.find((c) => c.id === conversationId)?.context.automations ?? []) : [];
   return [];
 }
 

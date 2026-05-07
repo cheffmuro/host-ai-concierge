@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { mockMetrics, mockConversations } from "@/mocks/data";
+import { USE_MOCKS } from "@/lib/mocks";
 import { Badge } from "@/components/ui/badge";
 import { ChannelIcon, channelLabel } from "@/components/channel-icon";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
@@ -39,31 +39,30 @@ function Metric({ label, value, delta, positive }: { label: string; value: strin
 }
 
 function DashboardPage() {
-  useEffect(() => {
-    const BASE_URL = "https://app.chatwoot.com";
-    const w = window as unknown as { chatwootSDK?: { run: (o: { websiteToken: string; baseUrl: string }) => void } };
-    const existing = document.getElementById("chatwoot-sdk") as HTMLScriptElement | null;
-    const run = () => w.chatwootSDK?.run({ websiteToken: "mock_tok_i4fnu8kx", baseUrl: BASE_URL });
-    if (existing) { run(); return; }
-    const g = document.createElement("script");
-    g.id = "chatwoot-sdk";
-    g.src = BASE_URL + "/packs/js/sdk.js";
-    g.defer = true;
-    g.async = true;
-    g.onload = run;
-    document.body.appendChild(g);
-  }, []);
-
-  const m = mockMetrics;
-  const handoffs = mockConversations.filter((c) => !c.aiHandling).slice(0, 4);
+  const empty = !USE_MOCKS;
+  const m = USE_MOCKS ? mockMetrics : {
+    resolutionRate: 0,
+    avgHandleTime: "—",
+    humanHandoffs: 0,
+    activeConversations: 0,
+    weeklyVolume: [] as Array<{ day: string; automated: number; human: number }>,
+  };
+  const handoffs = USE_MOCKS ? mockConversations.filter((c) => !c.aiHandling).slice(0, 4) : [];
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
+      {empty && (
+        <Card className="rounded-sm border-amber-200 bg-amber-50 shadow-none">
+          <CardContent className="py-4 text-sm text-amber-900">
+            Nenhuma integração conectada ainda. Configure Chatwoot, Evolution, Dify e n8n em <a href="/settings/integrations" className="underline font-medium">Integrações</a> para começar a ver dados reais.
+          </CardContent>
+        </Card>
+      )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric label="Resolução pela IA" value={`${Math.round(m.resolutionRate * 100)}%`} delta="+3.2 sem." positive />
-        <Metric label="Tempo Médio" value={m.avgHandleTime} delta="-12s sem." positive />
-        <Metric label="Transbordos Humanos" value={String(m.humanHandoffs)} delta="-4 sem." positive />
-        <Metric label="Conversas Ativas" value={String(m.activeConversations)} delta="+6 hoje" />
+        <Metric label="Resolução pela IA" value={empty ? "—" : `${Math.round(m.resolutionRate * 100)}%`} delta={empty ? "" : "+3.2 sem."} positive />
+        <Metric label="Tempo Médio" value={m.avgHandleTime} delta={empty ? "" : "-12s sem."} positive />
+        <Metric label="Transbordos Humanos" value={String(m.humanHandoffs)} delta={empty ? "" : "-4 sem."} positive />
+        <Metric label="Conversas Ativas" value={String(m.activeConversations)} delta={empty ? "" : "+6 hoje"} />
       </div>
 
       <Card className="rounded-sm border-border/60 shadow-none">
@@ -96,6 +95,9 @@ function DashboardPage() {
           <p className="text-xs text-slate-500">Conversas que foram escaladas para o time humano.</p>
         </CardHeader>
         <CardContent className="divide-y divide-border/60">
+          {handoffs.length === 0 && (
+            <p className="py-6 text-sm text-slate-500">Sem transbordos no momento.</p>
+          )}
           {handoffs.map((c) => (
             <div key={c.id} className="flex items-center justify-between py-3">
               <div className="flex items-center gap-3 min-w-0">

@@ -10,6 +10,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useInboxStore } from "@/stores/inboxStore";
 import { mockConversations } from "@/mocks/data";
+import { USE_MOCKS } from "@/lib/mocks";
 import type {
   Attachment, AutomationEvent, AutomationStatus, AutomationType,
   Conversation, Message, MessageStatus, Sentiment,
@@ -58,7 +59,7 @@ const uid = () =>
 
 function InboxPage() {
   const { selectedId, setSelected, search, setSearch, channelFilter, setChannelFilter, contextOpen, setContextOpen } = useInboxStore();
-  const [conversations, setConversations] = useState<Conversation[]>(mockConversations);
+  const [conversations, setConversations] = useState<Conversation[]>(USE_MOCKS ? mockConversations : []);
   const selected = conversations.find((c) => c.id === selectedId) ?? null;
 
   useEffect(() => {
