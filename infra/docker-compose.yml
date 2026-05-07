@@ -127,10 +127,16 @@ services:
       APP_WEB_URL: https://dify.${BASE_DOMAIN}
       WEB_API_CORS_ALLOW_ORIGINS: ${DIFY_CORS_ORIGINS}
       CONSOLE_CORS_ALLOW_ORIGINS: ${DIFY_CORS_ORIGINS}
+    # Roda migrations antes de iniciar a API (idempotente).
+    # Sem isso, primeiro boot quebra com "relation dify_setups does not exist".
+    entrypoint:
+      - sh
+      - -c
+      - "flask db upgrade && /entrypoint.sh"
     volumes:
       - dify_storage:/app/api/storage
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:5001/console/api/setup >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5001/console/api/setup >/dev/null 2>&1 || curl -fsS http://localhost:5001/console/api/setup >/dev/null 2>&1 || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 10
