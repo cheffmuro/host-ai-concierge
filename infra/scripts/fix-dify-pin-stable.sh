@@ -4,11 +4,14 @@
 # e plugin-daemon (rota /management/datasources não existe nas versões pinadas
 # então o front passa a usar o fluxo legado, que funciona).
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 
-echo "==> git pull"
-git checkout -- docker-compose.yml 2>/dev/null || true
-git pull --rebase || git pull || true
+echo "==> Resetando alterações locais e puxando última versão"
+git stash push -u -m "fix-dify-pin-stable autostash $(date +%s)" >/dev/null 2>&1 || true
+git checkout -- . 2>/dev/null || true
+git pull --rebase origin main 2>/dev/null || git pull origin main || true
+
+cd infra
 
 echo "==> Pull das imagens pinadas"
 docker compose pull dify-api dify-web dify-plugin-daemon || true
