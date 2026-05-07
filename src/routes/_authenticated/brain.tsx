@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { mockKnowledgeDocs, mockQA } from "@/mocks/data";
+import { USE_MOCKS } from "@/lib/mocks";
 import type { KnowledgeDoc, QAPair } from "@/services/types";
 import { addQAPair, uploadDocument } from "@/services/difyService";
 
@@ -26,8 +27,8 @@ export const Route = createFileRoute("/_authenticated/brain")({
 });
 
 function BrainPage() {
-  const [docs, setDocs] = useState<KnowledgeDoc[]>(mockKnowledgeDocs);
-  const [qa, setQa] = useState<QAPair[]>(mockQA);
+  const [docs, setDocs] = useState<KnowledgeDoc[]>(USE_MOCKS ? mockKnowledgeDocs : []);
+  const [qa, setQa] = useState<QAPair[]>(USE_MOCKS ? mockQA : []);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [search, setSearch] = useState("");
