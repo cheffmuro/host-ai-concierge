@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Inbox, BrainCircuit, Workflow, Plug, LogOut, Settings, User } from "lucide-react";
+import { LayoutDashboard, Inbox, BrainCircuit, Workflow, Plug, LogOut, Settings, User, BookOpen } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -21,6 +21,7 @@ const items = [
   { title: "Brain", url: "/brain", icon: BrainCircuit },
   { title: "Workflows", url: "/workflows", icon: Workflow },
   { title: "Integrações", url: "/settings/integrations", icon: Settings },
+  { title: "Manual", url: "/settings/guide", icon: BookOpen },
   { title: "Perfil", url: "/profile", icon: User },
 ];
 

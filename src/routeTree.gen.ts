@@ -21,6 +21,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedChannelsRouteImport } from './routes/_authenticated/channels'
 import { Route as AuthenticatedBrainRouteImport } from './routes/_authenticated/brain'
 import { Route as AuthenticatedSettingsIntegrationsRouteImport } from './routes/_authenticated/settings.integrations'
+import { Route as AuthenticatedSettingsGuideRouteImport } from './routes/_authenticated/settings.guide'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -82,6 +83,12 @@ const AuthenticatedSettingsIntegrationsRoute =
     path: '/settings/integrations',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedSettingsGuideRoute =
+  AuthenticatedSettingsGuideRouteImport.update({
+    id: '/settings/guide',
+    path: '/settings/guide',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof AuthenticatedInboxRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/workflows': typeof AuthenticatedWorkflowsRoute
+  '/settings/guide': typeof AuthenticatedSettingsGuideRoute
   '/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
 }
 export interface FileRoutesByTo {
@@ -107,6 +115,7 @@ export interface FileRoutesByTo {
   '/inbox': typeof AuthenticatedInboxRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/workflows': typeof AuthenticatedWorkflowsRoute
+  '/settings/guide': typeof AuthenticatedSettingsGuideRoute
   '/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
 }
 export interface FileRoutesById {
@@ -122,6 +131,7 @@ export interface FileRoutesById {
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/workflows': typeof AuthenticatedWorkflowsRoute
+  '/_authenticated/settings/guide': typeof AuthenticatedSettingsGuideRoute
   '/_authenticated/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
 }
 export interface FileRouteTypes {
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/profile'
     | '/workflows'
+    | '/settings/guide'
     | '/settings/integrations'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/profile'
     | '/workflows'
+    | '/settings/guide'
     | '/settings/integrations'
   id:
     | '__root__'
@@ -164,6 +176,7 @@ export interface FileRouteTypes {
     | '/_authenticated/inbox'
     | '/_authenticated/profile'
     | '/_authenticated/workflows'
+    | '/_authenticated/settings/guide'
     | '/_authenticated/settings/integrations'
   fileRoutesById: FileRoutesById
 }
@@ -261,6 +274,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsIntegrationsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/settings/guide': {
+      id: '/_authenticated/settings/guide'
+      path: '/settings/guide'
+      fullPath: '/settings/guide'
+      preLoaderRoute: typeof AuthenticatedSettingsGuideRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -271,6 +291,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedWorkflowsRoute: typeof AuthenticatedWorkflowsRoute
+  AuthenticatedSettingsGuideRoute: typeof AuthenticatedSettingsGuideRoute
   AuthenticatedSettingsIntegrationsRoute: typeof AuthenticatedSettingsIntegrationsRoute
 }
 
@@ -281,6 +302,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedWorkflowsRoute: AuthenticatedWorkflowsRoute,
+  AuthenticatedSettingsGuideRoute: AuthenticatedSettingsGuideRoute,
   AuthenticatedSettingsIntegrationsRoute:
     AuthenticatedSettingsIntegrationsRoute,
 }

@@ -22,6 +22,7 @@ const titles: Record<string, string> = {
   "/brain": "Base de Conhecimento",
   "/workflows": "Automações",
   "/settings/integrations": "Integrações",
+  "/settings/guide": "Manual de Integrações",
   "/profile": "Perfil",
 };
 
