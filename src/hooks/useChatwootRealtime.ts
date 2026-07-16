@@ -113,5 +113,5 @@ export function useChatwootRealtime(handlers: Handlers) {
       if (reconnectTimer) clearTimeout(reconnectTimer);
       ws?.close();
     };
-  }, []);
+  }, [version]);
 }
