@@ -1,49 +1,59 @@
 /**
- * Server functions que leem as credenciais das integrações a partir de
- * `app_settings` (RLS: qualquer autenticado consegue ler). Substituem a
- * leitura direta de `import.meta.env.VITE_*` nos services do front.
+ * Server functions expostas ao cliente para descobrir *quais* integrações
+ * estão configuradas e obter dados NÃO sensíveis (URLs, ids, pubsub token).
+ * Os tokens de admin (`user_token`, `api_key`) NÃO saem do servidor —
+ * chamadas ao Chatwoot/Dify passam por `chatwoot.functions.ts` e
+ * `dify.functions.ts`.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-export interface ChatwootConfig {
+export interface ChatwootPublicConfig {
   url?: string;
-  user_token?: string;
   account_id?: string;
   inbox_id?: string;
   pubsub_token?: string;
+  configured: boolean;
 }
 
-export interface DifyConfig {
+export interface DifyPublicConfig {
   url?: string;
-  api_key?: string;
   dataset_id?: string;
+  configured: boolean;
 }
 
-async function loadSetting<T>(key: string): Promise<T> {
-  // Usa admin client após verificação de auth (feita pelo middleware).
-  // A tabela `app_settings` tem SELECT restrito a admin por RLS; os operadores
-  // não-admin ainda precisam operar o Chatwoot/Dify (enviar mensagens etc.),
-  // por isso lemos via service role aqui, depois do middleware validar o token.
+// Compat aliases para código existente.
+export type ChatwootConfig = ChatwootPublicConfig;
+export type DifyConfig = DifyPublicConfig;
+
+async function loadRaw(key: string): Promise<Record<string, string>> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
-    .from("app_settings")
-    .select("value")
-    .eq("key", key)
-    .maybeSingle();
+    .from("app_settings").select("value").eq("key", key).maybeSingle();
   if (error) throw new Error(error.message);
-  return ((data?.value as T) ?? ({} as T));
+  return (data?.value ?? {}) as Record<string, string>;
 }
 
 export const getChatwootConfig = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    return loadSetting<ChatwootConfig>("chatwoot");
+  .handler(async (): Promise<ChatwootPublicConfig> => {
+    const v = await loadRaw("chatwoot");
+    return {
+      url: v.url,
+      account_id: v.account_id,
+      inbox_id: v.inbox_id,
+      pubsub_token: v.pubsub_token,
+      configured: Boolean(v.url && v.user_token && v.account_id),
+    };
   });
 
 export const getDifyConfig = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async () => {
-    return loadSetting<DifyConfig>("dify");
+  .handler(async (): Promise<DifyPublicConfig> => {
+    const v = await loadRaw("dify");
+    return {
+      url: v.url,
+      dataset_id: v.dataset_id,
+      configured: Boolean(v.url && v.api_key && v.dataset_id),
+    };
   });
-
