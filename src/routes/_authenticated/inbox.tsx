@@ -60,6 +60,23 @@ const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
 const uid = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Math.random().toString(36).slice(2);
 
+/** Minutos desde a última atualização — usado para calcular SLA. */
+function waitMinutes(c: Conversation): number {
+  return Math.max(0, Math.floor((Date.now() - new Date(c.updatedAt).getTime()) / 60000));
+}
+/** Formata SLA compacto: 12m, 3h, 2d. */
+function formatSla(min: number): string {
+  if (min < 60) return `${min}m`;
+  if (min < 60 * 24) return `${Math.floor(min / 60)}h`;
+  return `${Math.floor(min / (60 * 24))}d`;
+}
+/** Lógica simulada: crítico se frustrado, sem IA há muito, ou espera >30m com não-lidas. */
+function isCritical(c: Conversation): boolean {
+  if (c.sentiment === "frustrated") return true;
+  if (c.unread > 0 && waitMinutes(c) >= 30) return true;
+  return false;
+}
+
 function InboxPage() {
   const { selectedId, setSelected, search, setSearch, channelFilter, setChannelFilter, contextOpen, setContextOpen } = useInboxStore();
   const [conversations, setConversations] = useState<Conversation[]>(USE_MOCKS ? mockConversations : []);
