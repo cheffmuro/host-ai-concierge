@@ -129,7 +129,7 @@ export function mapConversation(c: CwConversation): Conversation {
 // --- Public API -------------------------------------------------------------
 
 export async function listConversations(): Promise<Conversation[]> {
-  if (!isLive) { await delay(); return useMockFallback() ? mockConversations : []; }
+  if (!isLive()) { await delay(); return useMockFallback() ? mockConversations : []; }
   const data = await http<{ data: { payload: CwConversation[] } }>(
     api(`/conversations?status=open&assignee_type=me&page=1`),
     { headers: headers() },
@@ -138,7 +138,7 @@ export async function listConversations(): Promise<Conversation[]> {
 }
 
 export async function getConversation(id: string): Promise<Conversation | undefined> {
-  if (!isLive) { await delay(); return useMockFallback() ? mockConversations.find((c) => c.id === id) : undefined; }
+  if (!isLive()) { await delay(); return useMockFallback() ? mockConversations.find((c) => c.id === id) : undefined; }
   const c = await http<CwConversation>(api(`/conversations/${id}`), { headers: headers() });
   const msgs = await http<{ payload: CwMessage[] }>(api(`/conversations/${id}/messages`), { headers: headers() });
   return mapConversation({ ...c, messages: msgs.payload });
@@ -149,7 +149,7 @@ export async function sendMessage(
   content: string,
   attachments?: Attachment[],
 ): Promise<Message> {
-  if (!isLive) {
+  if (!isLive()) {
     await delay(450);
     if (typeof navigator !== "undefined" && !navigator.onLine) throw new Error("offline");
     if (Math.random() < 0.25) throw new Error("network_unstable");
@@ -185,7 +185,7 @@ export async function sendMessage(
 }
 
 export async function assignAgent(conversationId: string, agentId: string): Promise<void> {
-  if (!isLive) return;
+  if (!isLive()) return;
   await http(api(`/conversations/${conversationId}/assignments`), {
     method: "POST",
     headers: headers(),
@@ -194,7 +194,7 @@ export async function assignAgent(conversationId: string, agentId: string): Prom
 }
 
 export async function listAutomations(conversationId: string): Promise<AutomationEvent[]> {
-  if (!isLive) return useMockFallback() ? (mockConversations.find((c) => c.id === conversationId)?.context.automations ?? []) : [];
+  if (!isLive()) return useMockFallback() ? (mockConversations.find((c) => c.id === conversationId)?.context.automations ?? []) : [];
   return [];
 }
 
@@ -202,7 +202,7 @@ export const chatwootInboxId = INBOX_ID;
 
 /** Liga/desliga IA para uma conversa via custom_attributes. */
 export async function setAiHandling(conversationId: string, enabled: boolean): Promise<void> {
-  if (!isLive) return;
+  if (!isLive()) return;
   await http(api(`/conversations/${conversationId}/custom_attributes`), {
     method: "POST",
     headers: headers(),
