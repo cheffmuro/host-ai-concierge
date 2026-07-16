@@ -18,8 +18,8 @@ export const attachSupabaseAuth = createMiddleware({ type: 'function' }).client(
         const { data: refreshed, error } = await supabase.auth.refreshSession()
         if (error || !refreshed.session) {
           await supabase.auth.signOut().catch(() => {})
-          if (typeof window !== 'undefined' && window.location.pathname !== '/auth') {
-            window.location.replace('/auth')
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            window.location.replace('/login')
           }
           session = null
         } else {
