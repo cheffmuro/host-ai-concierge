@@ -91,6 +91,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_integrations_status: {
+        Args: never
+        Returns: {
+          configured: boolean
+          key: string
+          updated_at: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
