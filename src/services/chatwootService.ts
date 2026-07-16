@@ -34,6 +34,8 @@ function mapChannel(channel?: string): Channel {
   if (!channel) return "web";
   const c = channel.toLowerCase();
   if (c.includes("whatsapp")) return "whatsapp";
+  if (c.includes("instagram")) return "instagram";
+  if (c.includes("facebook") || c.includes("messenger")) return "facebook";
   if (c.includes("email")) return "email";
   return "web";
 }
