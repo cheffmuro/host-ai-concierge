@@ -6,7 +6,9 @@ import { USE_MOCKS } from "@/lib/mocks";
 import { Badge } from "@/components/ui/badge";
 import { ChannelIcon, channelLabel } from "@/components/channel-icon";
 import { IntegrationsBanner } from "@/components/integrations-banner";
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Loader2 } from "lucide-react";
+import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
+
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -40,14 +42,17 @@ function Metric({ label, value, delta, positive }: { label: string; value: strin
 }
 
 function DashboardPage() {
-  const empty = !USE_MOCKS;
-  const m = USE_MOCKS ? mockMetrics : {
-    resolutionRate: 0,
-    avgHandleTime: "—",
-    humanHandoffs: 0,
-    activeConversations: 0,
-    weeklyVolume: [] as Array<{ day: string; automated: number; human: number }>,
-  };
+  const { data: live, loading } = useDashboardMetrics();
+  const empty = !USE_MOCKS && !live.configured;
+  const m = USE_MOCKS
+    ? mockMetrics
+    : {
+        resolutionRate: live.resolutionRate,
+        avgHandleTime: live.avgHandleTime,
+        humanHandoffs: live.humanHandoffs,
+        activeConversations: live.activeConversations,
+        weeklyVolume: live.weeklyVolume,
+      };
   const handoffs = USE_MOCKS ? mockConversations.filter((c) => !c.aiHandling).slice(0, 4) : [];
 
   return (
@@ -61,11 +66,12 @@ function DashboardPage() {
         </Card>
       )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Metric label="Resolução pela IA" value={empty ? "—" : `${Math.round(m.resolutionRate * 100)}%`} delta={empty ? "" : "+3.2 sem."} positive />
-        <Metric label="Tempo Médio" value={m.avgHandleTime} delta={empty ? "" : "-12s sem."} positive />
-        <Metric label="Transbordos Humanos" value={String(m.humanHandoffs)} delta={empty ? "" : "-4 sem."} positive />
-        <Metric label="Conversas Ativas" value={String(m.activeConversations)} delta={empty ? "" : "+6 hoje"} />
+        <Metric label="Resolução pela IA" value={empty ? "—" : `${Math.round(m.resolutionRate * 100)}%`} delta={loading ? "…" : "7 dias"} positive />
+        <Metric label="Tempo Médio" value={m.avgHandleTime} delta={loading ? "…" : "resolução"} positive />
+        <Metric label="Transbordos Humanos" value={String(m.humanHandoffs)} delta={loading ? "…" : "7 dias"} />
+        <Metric label="Conversas Ativas" value={String(m.activeConversations)} delta={loading ? <Loader2 className="h-3 w-3 animate-spin" /> as unknown as string : "abertas"} />
       </div>
+
 
       <Card className="rounded-sm border-border/60 shadow-none">
         <CardHeader>
