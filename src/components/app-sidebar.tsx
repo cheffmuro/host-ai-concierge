@@ -32,10 +32,13 @@ export function AppSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const isActive = (p: string) => currentPath === p || currentPath.startsWith(p + "/");
   const { user, signOut } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
   const initials = (user?.user_metadata?.display_name || user?.email || "?").slice(0, 2).toUpperCase();
   const name = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Usuário";
-  const navItems = [...items.slice(0, 7), { title: "Usuários", url: "/settings/users", icon: Users }, ...items.slice(7)];
+  const navItems = isAdmin
+    ? [...items.slice(0, 7), { title: "Usuários", url: "/settings/users", icon: Users }, ...items.slice(7)]
+    : items;
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/60">
