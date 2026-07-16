@@ -1,5 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Inbox, BrainCircuit, Workflow, Plug, LogOut, Settings, User, BookOpen } from "lucide-react";
+import { LayoutDashboard, Inbox, BrainCircuit, Workflow, Plug, LogOut, Settings, User, BookOpen, Users } from "lucide-react";
+import { useIsAdmin } from "@/hooks/useRole";
 import {
   Sidebar,
   SidebarContent,
@@ -31,9 +32,13 @@ export function AppSidebar() {
   const currentPath = useRouterState({ select: (r) => r.location.pathname });
   const isActive = (p: string) => currentPath === p || currentPath.startsWith(p + "/");
   const { user, signOut } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
   const initials = (user?.user_metadata?.display_name || user?.email || "?").slice(0, 2).toUpperCase();
   const name = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Usuário";
+  const navItems = isAdmin
+    ? [...items.slice(0, 7), { title: "Usuários", url: "/settings/users", icon: Users }, ...items.slice(7)]
+    : items;
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/60">
@@ -54,7 +59,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {items.map((item) => (
+              {navItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
                     <Link to={item.url} className="flex items-center gap-3">
