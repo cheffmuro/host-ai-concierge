@@ -15,9 +15,9 @@ export const getCustomerContext = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) =>
     z.object({ identifier: z.string().min(3) }).parse(input),
   )
-  .handler(async ({ context, data }): Promise<CustomerContext | null> => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  .handler(async ({ context, data }): Promise<any> => {
     const id = normalize(data.identifier);
-    // Busca por identifier normalizado OU e-mail OU telefone.
     const { data: row, error } = await context.supabase
       .from("customer_context")
       .select("*")
@@ -32,15 +32,16 @@ export const getCustomerContext = createServerFn({ method: "POST" })
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!row) return null;
-    return {
+    const ctx: CustomerContext = {
       ltv: Number(row.ltv ?? 0),
       averageTicket: Number(row.average_ticket ?? 0),
       totalOrders: Number(row.total_orders ?? 0),
-      lastPurchases: (row.last_purchases as CustomerPurchase[]) ?? [],
+      lastPurchases: (row.last_purchases as unknown as CustomerPurchase[]) ?? [],
       tags: (row.tags as string[]) ?? [],
       automations: [],
       source: row.source ?? undefined,
       notes: row.notes ?? undefined,
       externalId: row.external_id ?? undefined,
     };
+    return ctx;
   });
