@@ -58,7 +58,7 @@ export const chatwootListConversations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async () => {
     const cfg = await loadCfg();
-    return cwFetch<{ data: { payload: unknown[] } }>(
+    return cwFetch(
       cfg,
       `/conversations?status=open&assignee_type=me&page=1`,
     );
@@ -69,8 +69,8 @@ export const chatwootGetConversation = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string() }).parse(input))
   .handler(async ({ data }) => {
     const cfg = await loadCfg();
-    const conv = await cwFetch<unknown>(cfg, `/conversations/${data.id}`);
-    const msgs = await cwFetch<{ payload: unknown[] }>(cfg, `/conversations/${data.id}/messages`);
+    const conv = await cwFetch(cfg, `/conversations/${data.id}`);
+    const msgs = await cwFetch(cfg, `/conversations/${data.id}/messages`);
     return { conversation: conv, messages: msgs.payload };
   });
 
@@ -108,7 +108,7 @@ export const chatwootSendMessage = createServerFn({ method: "POST" })
       if (!res.ok) throw new Error(`chatwoot_${res.status}`);
       return res.json();
     }
-    return cwFetch<unknown>(cfg, path, {
+    return cwFetch(cfg, path, {
       method: "POST",
       body: JSON.stringify({ content: data.content, message_type: "outgoing", private: false }),
     });
