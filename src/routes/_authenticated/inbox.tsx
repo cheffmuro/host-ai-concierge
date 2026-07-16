@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot, Search, Send, Paperclip, Sparkles, ArrowLeft, Info, Loader2,
   Check, CloudOff, AlertCircle, X, FileText, ImageIcon, RotateCw,
-  CornerDownRight, Truck,
+  CornerDownRight, Truck, Clock, AlertTriangle, PackageCheck, PackageX, RefreshCcw, Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow, format } from "date-fns";
@@ -59,6 +59,23 @@ const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
 
 const uid = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+
+/** Minutos desde a última atualização — usado para calcular SLA. */
+function waitMinutes(c: Conversation): number {
+  return Math.max(0, Math.floor((Date.now() - new Date(c.updatedAt).getTime()) / 60000));
+}
+/** Formata SLA compacto: 12m, 3h, 2d. */
+function formatSla(min: number): string {
+  if (min < 60) return `${min}m`;
+  if (min < 60 * 24) return `${Math.floor(min / 60)}h`;
+  return `${Math.floor(min / (60 * 24))}d`;
+}
+/** Lógica simulada: crítico se frustrado, sem IA há muito, ou espera >30m com não-lidas. */
+function isCritical(c: Conversation): boolean {
+  if (c.sentiment === "frustrated") return true;
+  if (c.unread > 0 && waitMinutes(c) >= 30) return true;
+  return false;
+}
 
 function InboxPage() {
   const { selectedId, setSelected, search, setSearch, channelFilter, setChannelFilter, contextOpen, setContextOpen } = useInboxStore();
@@ -171,10 +188,16 @@ function InboxPage() {
   });
 
   const filtered = useMemo(() => {
-    return conversations.filter((c) => {
+    const list = conversations.filter((c) => {
       if (channelFilter !== "all" && c.channel !== channelFilter) return false;
       if (search && !c.customerName.toLowerCase().includes(search.toLowerCase()) && !c.preview.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
+    });
+    return list.sort((a, b) => {
+      const ca = isCritical(a) ? 1 : 0;
+      const cb = isCritical(b) ? 1 : 0;
+      if (ca !== cb) return cb - ca;
+      return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
     });
   }, [conversations, channelFilter, search]);
 
@@ -323,7 +346,15 @@ function InboxPage() {
                         </span>
                       </div>
                       <p className="mt-0.5 truncate text-xs text-slate-500">{c.preview}</p>
-                      <div className="mt-2 flex items-center gap-2">
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        {isCritical(c) && (
+                          <Badge variant="outline" className="rounded-sm border-rose-300 bg-rose-50 px-1.5 py-0 text-[10px] font-medium text-rose-700 gap-1">
+                            <AlertTriangle className="h-3 w-3" strokeWidth={1.5} /> Crítico
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="rounded-sm border-border/60 px-1.5 py-0 text-[10px] font-normal text-slate-500 gap-1">
+                          <Clock className="h-3 w-3" strokeWidth={1.5} /> {formatSla(waitMinutes(c))}
+                        </Badge>
                         <Badge variant="outline" className="rounded-sm border-border/60 px-1.5 py-0 text-[10px] font-normal text-slate-500 gap-1">
                           <ChannelIcon channel={c.channel} className="h-3 w-3" />
                           {channelLabel[c.channel]}
@@ -693,19 +724,48 @@ function ContextPanel({ conversation }: { conversation: Conversation }) {
         </div>
 
         <div>
-          <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500 mb-2">Últimas compras</p>
+          <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500 mb-2">Status operacional · últimos pedidos</p>
           <ul className="space-y-2">
-            {ctx.lastPurchases.map((p) => (
-              <li key={p.id} className="flex items-center justify-between border-b border-border/60 pb-2 last:border-none">
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-slate-900 truncate">{p.item}</p>
-                  <p className="text-[10px] text-slate-400">{p.date}</p>
-                </div>
-                <span className="text-xs text-slate-700">{fmt(p.amount)}</span>
-              </li>
-            ))}
+            {ctx.lastPurchases.map((p, i) => {
+              // Status simulado: alterna entregue / em trânsito / atrasado
+              const statuses = [
+                { Icon: PackageCheck, label: "Entregue", cls: "text-emerald-600" },
+                { Icon: Truck, label: "Em trânsito", cls: "text-sky-600" },
+                { Icon: PackageX, label: "Atrasado", cls: "text-rose-600" },
+              ] as const;
+              const s = statuses[i % statuses.length];
+              return (
+                <li key={p.id} className="flex items-center justify-between gap-2 border-b border-border/60 pb-2 last:border-none">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <s.Icon className={`h-4 w-4 shrink-0 ${s.cls}`} strokeWidth={1.5} />
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-slate-900 truncate">{p.item}</p>
+                      <p className="text-[10px] text-slate-400">{p.date} · {s.label}</p>
+                    </div>
+                  </div>
+                  <span className="text-xs text-slate-700 shrink-0">{fmt(p.amount)}</span>
+                </li>
+              );
+            })}
             {ctx.lastPurchases.length === 0 && <li className="text-xs text-slate-400">Sem compras anteriores</li>}
           </ul>
+        </div>
+
+        <div className="space-y-2 border-t border-border/60 pt-4">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Ações rápidas · SAC</p>
+          <Button
+            className="w-full justify-start gap-2 rounded-sm"
+            onClick={() => toast.success("Solicitação enviada para n8n", { description: "Etiqueta de logística reversa em processamento." })}
+          >
+            <Undo2 className="h-4 w-4" strokeWidth={1.5} /> Gerar etiqueta de reversa
+          </Button>
+          <Button
+            variant="secondary"
+            className="w-full justify-start gap-2 rounded-sm"
+            onClick={() => toast.success("Solicitação enviada para n8n", { description: "Fluxo de reembolso iniciado." })}
+          >
+            <RefreshCcw className="h-4 w-4" strokeWidth={1.5} /> Solicitar reembolso
+          </Button>
         </div>
 
         {ctx.aiReasoning && (
