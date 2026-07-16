@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { ensureActiveSession, isJwtExpiredError, refreshSessionForRetry } from "@/lib/client-session";
 
 export function useIsAdmin() {
   const { user, loading: authLoading } = useAuth();
@@ -31,12 +32,19 @@ export function useIsAdmin() {
     }
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .maybeSingle();
+      await ensureActiveSession();
+      const fetchRole = () => supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .eq("role", "admin")
+          .maybeSingle();
+
+      let { data, error } = await fetchRole();
+      if (isJwtExpiredError(error)) {
+        await refreshSessionForRetry();
+        ({ data, error } = await fetchRole());
+      }
       if (cancelled) return;
       if (error) {
         // Não força signout — apenas marca como não-admin até o próximo refresh.

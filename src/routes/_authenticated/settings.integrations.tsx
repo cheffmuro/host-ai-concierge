@@ -10,6 +10,7 @@ import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { pingChatwoot } from "@/services/chatwootService";
 import { pingDify } from "@/services/difyService";
 import { useIntegrationsStore } from "@/stores/integrationsStore";
+import { ensureActiveSession, isJwtExpiredError, refreshSessionForRetry } from "@/lib/client-session";
 
 export const Route = createFileRoute("/_authenticated/settings/integrations")({
   head: () => ({ meta: [{ title: "Integrações — Anfitrião" }] }),
@@ -55,22 +56,40 @@ const definitions: Record<IntegrationKey, { label: string; fields: { name: strin
   },
 };
 
+const integrationKeys = Object.keys(definitions) as IntegrationKey[];
+
 function IntegrationsPage() {
   const { isAdmin, loading: roleLoading } = useIsAdmin();
   const [data, setData] = useState<Record<string, Record<string, string>>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
 
+  const loadSettings = async () => {
+    setLoading(true);
+    await ensureActiveSession();
+    const fetchSettings = () => supabase.from("app_settings").select("key, value").in("key", integrationKeys);
+    let { data: rows, error } = await fetchSettings();
+    if (isJwtExpiredError(error)) {
+      await refreshSessionForRetry();
+      ({ data: rows, error } = await fetchSettings());
+    }
+    if (error) {
+      console.error("[integrations] settings load failed:", error.message);
+      toast.error("Não foi possível carregar integrações", { description: error.message });
+      setLoading(false);
+      return;
+    }
+    const map: Record<string, Record<string, string>> = {};
+    rows?.forEach((r: { key: string; value: unknown }) => {
+      map[r.key] = (r.value as Record<string, string>) || {};
+    });
+    setData(map);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    supabase.from("app_settings").select("key, value").in("key", Object.keys(definitions))
-      .then(({ data: rows }) => {
-        const map: Record<string, Record<string, string>> = {};
-        rows?.forEach((r: { key: string; value: unknown }) => {
-          map[r.key] = (r.value as Record<string, string>) || {};
-        });
-        setData(map);
-        setLoading(false);
-      });
+    void loadSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const update = (key: string, field: string, value: string) =>
@@ -80,10 +99,15 @@ function IntegrationsPage() {
   const [pingStatus, setPingStatus] = useState<Record<string, { ok: boolean; msg: string } | undefined>>({});
 
   const runPing = async (key: IntegrationKey) => {
-    const v = data[key] || {};
-    if (key === "chatwoot") return pingChatwoot(v as { url?: string; user_token?: string; account_id?: string });
-    if (key === "dify") return pingDify(v as { url?: string; api_key?: string; dataset_id?: string });
-    return { ok: true } as const; // evolution/n8n não têm ping remoto trivial (segredos + rota interna)
+    try {
+      const v = data[key] || {};
+      if (key === "chatwoot") return pingChatwoot(v as { url?: string; user_token?: string; account_id?: string });
+      if (key === "dify") return pingDify(v as { url?: string; api_key?: string; dataset_id?: string });
+      return { ok: true } as const; // evolution/n8n não têm ping remoto trivial (segredos + rota interna)
+    } catch (error) {
+      console.error(`[integrations] ping ${key} failed:`, error);
+      return { ok: false as const, error: "Não foi possível testar a conexão agora." };
+    }
   };
 
   const testConnection = async (key: IntegrationKey) => {
@@ -101,19 +125,17 @@ function IntegrationsPage() {
 
   const save = async (key: IntegrationKey) => {
     setSaving(key);
-    // Ping antes de gravar para não persistir credencial quebrada.
-    const result = await runPing(key);
-    if (!result.ok) {
-      setSaving(null);
-      setPingStatus((s) => ({ ...s, [key]: { ok: false, msg: result.error } }));
-      toast.error(`Credenciais inválidas`, { description: result.error });
-      return;
+    await ensureActiveSession();
+    const persist = () => supabase.from("app_settings").upsert({ key, value: data[key] || {} });
+    let { error } = await persist();
+    if (isJwtExpiredError(error)) {
+      await refreshSessionForRetry();
+      ({ error } = await persist());
     }
-    const { error } = await supabase.from("app_settings").upsert({ key, value: data[key] || {} });
     setSaving(null);
     if (error) { toast.error(error.message); return; }
-    setPingStatus((s) => ({ ...s, [key]: { ok: true, msg: "Salvo e validado" } }));
-    toast.success(`${definitions[key].label} salvo e validado`);
+    setPingStatus((s) => ({ ...s, [key]: { ok: true, msg: "Salvo" } }));
+    toast.success(`${definitions[key].label} salvo`);
     // Atualiza store para inbox/dashboard reagirem sem reload.
     const v = data[key] || {};
     if (key === "chatwoot") {
@@ -127,6 +149,15 @@ function IntegrationsPage() {
         url: v.url, dataset_id: v.dataset_id,
         configured: Boolean(v.url && v.api_key && v.dataset_id),
       });
+    }
+    if (key === "chatwoot" || key === "dify") {
+      const result = await runPing(key);
+      if (result.ok) {
+        setPingStatus((s) => ({ ...s, [key]: { ok: true, msg: "Salvo e validado" } }));
+      } else {
+        setPingStatus((s) => ({ ...s, [key]: { ok: false, msg: `Salvo, mas o teste falhou: ${result.error}` } }));
+        toast.warning("Configuração salva, mas o teste falhou", { description: result.error });
+      }
     }
   };
 
@@ -153,7 +184,7 @@ function IntegrationsPage() {
         </div>
       )}
 
-      {(Object.keys(definitions) as IntegrationKey[]).map((key) => {
+      {integrationKeys.map((key) => {
         const def = definitions[key];
         const configured = isConfigured(key);
         return (
@@ -173,7 +204,6 @@ function IntegrationsPage() {
                     id={`${key}-${f.name}`}
                     type={f.type || "text"}
                     placeholder={f.placeholder}
-                    disabled={!isAdmin}
                     value={data[key]?.[f.name] || ""}
                     onChange={(e) => update(key, f.name, e.target.value)}
                   />
@@ -190,23 +220,21 @@ function IntegrationsPage() {
                 <span>{pingStatus[key]!.msg}</span>
               </div>
             )}
-            {isAdmin && (
-              <div className="flex gap-2">
-                <Button onClick={() => save(key)} disabled={saving === key || testing === key} className="rounded-sm">
-                  {saving === key ? <><Loader2 className="mr-1.5 h-3 w-3 animate-spin" />Salvando…</> : "Salvar"}
+            <div className="flex gap-2">
+              <Button onClick={() => save(key)} disabled={saving === key || testing === key} className="rounded-sm">
+                {saving === key ? <><Loader2 className="mr-1.5 h-3 w-3 animate-spin" />Salvando…</> : "Salvar"}
+              </Button>
+              {(key === "chatwoot" || key === "dify") && (
+                <Button
+                  variant="outline"
+                  onClick={() => testConnection(key)}
+                  disabled={testing === key || saving === key}
+                  className="rounded-sm"
+                >
+                  {testing === key ? <><Loader2 className="mr-1.5 h-3 w-3 animate-spin" />Testando…</> : "Testar conexão"}
                 </Button>
-                {(key === "chatwoot" || key === "dify") && (
-                  <Button
-                    variant="outline"
-                    onClick={() => testConnection(key)}
-                    disabled={testing === key || saving === key}
-                    className="rounded-sm"
-                  >
-                    {testing === key ? <><Loader2 className="mr-1.5 h-3 w-3 animate-spin" />Testando…</> : "Testar conexão"}
-                  </Button>
-                )}
-              </div>
-            )}
+              )}
+            </div>
           </section>
         );
       })}
