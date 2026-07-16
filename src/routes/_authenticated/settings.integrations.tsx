@@ -76,13 +76,49 @@ function IntegrationsPage() {
   const update = (key: string, field: string, value: string) =>
     setData((d) => ({ ...d, [key]: { ...(d[key] || {}), [field]: value } }));
 
+  const [testing, setTesting] = useState<string | null>(null);
+  const [pingStatus, setPingStatus] = useState<Record<string, { ok: boolean; msg: string } | undefined>>({});
+
+  const runPing = async (key: IntegrationKey) => {
+    const v = data[key] || {};
+    if (key === "chatwoot") return pingChatwoot(v as { url?: string; user_token?: string; account_id?: string });
+    if (key === "dify") return pingDify(v as { url?: string; api_key?: string; dataset_id?: string });
+    return { ok: true } as const; // evolution/n8n não têm ping remoto trivial (segredos + rota interna)
+  };
+
+  const testConnection = async (key: IntegrationKey) => {
+    setTesting(key);
+    const result = await runPing(key);
+    setTesting(null);
+    if (result.ok) {
+      setPingStatus((s) => ({ ...s, [key]: { ok: true, msg: "Conectado com sucesso" } }));
+      toast.success(`${definitions[key].label} conectado`);
+    } else {
+      setPingStatus((s) => ({ ...s, [key]: { ok: false, msg: result.error } }));
+      toast.error(`Falha em ${definitions[key].label}`, { description: result.error });
+    }
+  };
+
   const save = async (key: IntegrationKey) => {
     setSaving(key);
+    // Ping antes de gravar para não persistir credencial quebrada.
+    const result = await runPing(key);
+    if (!result.ok) {
+      setSaving(null);
+      setPingStatus((s) => ({ ...s, [key]: { ok: false, msg: result.error } }));
+      toast.error(`Credenciais inválidas`, { description: result.error });
+      return;
+    }
     const { error } = await supabase.from("app_settings").upsert({ key, value: data[key] || {} });
     setSaving(null);
     if (error) { toast.error(error.message); return; }
-    toast.success(`${definitions[key].label} salvo`);
+    setPingStatus((s) => ({ ...s, [key]: { ok: true, msg: "Salvo e validado" } }));
+    toast.success(`${definitions[key].label} salvo e validado`);
+    // Atualiza store para inbox/dashboard reagirem sem reload.
+    if (key === "chatwoot") useIntegrationsStore.getState().setChatwoot(data[key] || {});
+    if (key === "dify") useIntegrationsStore.getState().setDify(data[key] || {});
   };
+
 
   const isConfigured = (key: IntegrationKey) => {
     const v = data[key];
