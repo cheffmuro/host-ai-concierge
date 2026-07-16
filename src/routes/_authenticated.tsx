@@ -33,6 +33,7 @@ function AuthenticatedLayout() {
   const path = useRouterState({ select: (r) => r.location.pathname });
   const title = titles[path] ?? "Anfitrião";
   useIntegrationsBootstrap();
+  useOnboardingGuard();
 
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">Carregando…</div>;
