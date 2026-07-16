@@ -315,6 +315,74 @@ bash /opt/host-ai-concierge/infra/evolution/create-instance.sh principal`}
         </ol>
       </Section>
 
+      <Section
+        id="context"
+        title="6. Contexto do cliente (Mercado Livre, site próprio, loja)"
+        subtitle="Traz LTV, ticket médio, pedidos e histórico de compras para o painel da conversa."
+      >
+        <p className="mb-4 text-sm text-slate-600">
+          O painel lê a tabela <Code>customer_context</Code>. Qualquer sistema externo
+          (Mercado Livre, seu site, seu ERP/loja) empurra os dados via webhook
+          assinado. Você pode chamar direto do backend do site/loja, ou usar um
+          workflow no n8n para consumir a API do Mercado Livre e reencaminhar.
+        </p>
+        <ol className="space-y-3">
+          <Step n={1}>
+            <strong>Endpoint</strong>:{" "}
+            <Code>POST https://host-concierge.lovable.app/api/public/customer-context</Code>
+          </Step>
+          <Step n={2}>
+            <strong>Headers</strong>:{" "}
+            <Code>Content-Type: application/json</Code> e{" "}
+            <Code>x-webhook-signature: &lt;HMAC-SHA256(body, SEGREDO)&gt;</Code>.
+            O segredo está salvo no backend como{" "}
+            <Code>CUSTOMER_CONTEXT_WEBHOOK_SECRET</Code>. Peça a um admin para revelar
+            (Backend → Secrets) e configure na origem.
+          </Step>
+          <Step n={3}>
+            <strong>Payload</strong> (campos marcados com * são obrigatórios):
+            <pre className="mt-2 overflow-x-auto rounded bg-slate-900 p-3 text-[12px] text-slate-100">
+{`{
+  "identifier": "maria@exemplo.com",     // * chave (e-mail, telefone ou doc)
+  "source": "mercadolivre",               // mercadolivre | site | loja | outro
+  "name": "Maria Silva",
+  "email": "maria@exemplo.com",
+  "phone": "+5511999990000",
+  "external_id": "ML-12345",
+  "ltv": 1250.90,
+  "average_ticket": 320.10,
+  "total_orders": 4,
+  "last_purchases": [
+    { "id": "ord_1", "item": "Cafeteira X1", "date": "2026-05-01", "amount": 320.10 }
+  ],
+  "tags": ["vip", "recorrente"],
+  "notes": "Cliente VIP desde 2023"
+}`}
+            </pre>
+          </Step>
+          <Step n={4}>
+            <strong>Mercado Livre</strong>: crie um workflow no n8n com o nó{" "}
+            <em>Mercado Livre → Get Orders</em> (autenticado no seu vendedor),
+            agrupe por comprador, calcule LTV/ticket, e mande no webhook acima.
+            Rode a cada 6h com o nó <em>Cron</em>.
+          </Step>
+          <Step n={5}>
+            <strong>Site próprio / loja</strong>: adicione uma chamada ao endpoint
+            no seu backend a cada pedido novo (checkout finalizado). Assine o corpo
+            com HMAC-SHA256 usando o mesmo segredo.
+          </Step>
+          <Step n={6}>
+            Verifique: envie um POST de teste (via <em>curl</em>, Postman ou n8n) e abra a
+            conversa desse cliente na <Link to="/inbox" className="text-blue-600 hover:underline">Inbox</Link>.
+            O painel lateral vai mostrar LTV, ticket médio e as últimas compras.
+          </Step>
+        </ol>
+        <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3 text-[12px] text-slate-600">
+          <strong>Exemplo de assinatura</strong> (Node):{" "}
+          <Code>{"crypto.createHmac('sha256', SECRET).update(body).digest('hex')"}</Code>
+        </div>
+      </Section>
+
       <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
         Pronto! Quando os 4 cards de <Link to="/settings/integrations" className="font-medium underline">Integrações</Link> aparecerem como <strong>Configurado</strong>, o Anfitrião está operacional. Mande uma mensagem de teste para o WhatsApp conectado e acompanhe a conversa no <Link to="/inbox" className="font-medium underline">Inbox</Link>.
       </div>
