@@ -384,7 +384,7 @@ bash /opt/host-ai-concierge/infra/evolution/create-instance.sh principal`}
       </Section>
 
       <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-        Pronto! Quando os 4 cards de <Link to="/settings/integrations" className="font-medium underline">Integrações</Link> aparecerem como <strong>Configurado</strong>, o Anfitrião está operacional. Mande uma mensagem de teste para o WhatsApp conectado e acompanhe a conversa no <Link to="/inbox" className="font-medium underline">Inbox</Link>.
+        Pronto! Quando os cards de <Link to="/settings/integrations" className="font-medium underline">Integrações</Link> aparecerem como <strong>Configurado</strong>, as inboxes de Meta (Instagram/Facebook) estiverem conectadas no Chatwoot e o webhook de contexto do cliente estiver rodando, o Anfitrião está operacional. Mande uma mensagem de teste e acompanhe no <Link to="/inbox" className="font-medium underline">Inbox</Link>.
       </div>
     </div>
   );
