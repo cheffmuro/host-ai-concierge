@@ -115,8 +115,19 @@ function IntegrationsPage() {
     setPingStatus((s) => ({ ...s, [key]: { ok: true, msg: "Salvo e validado" } }));
     toast.success(`${definitions[key].label} salvo e validado`);
     // Atualiza store para inbox/dashboard reagirem sem reload.
-    if (key === "chatwoot") useIntegrationsStore.getState().setChatwoot(data[key] || {});
-    if (key === "dify") useIntegrationsStore.getState().setDify(data[key] || {});
+    const v = data[key] || {};
+    if (key === "chatwoot") {
+      useIntegrationsStore.getState().setChatwoot({
+        url: v.url, account_id: v.account_id, inbox_id: v.inbox_id, pubsub_token: v.pubsub_token,
+        configured: Boolean(v.url && v.user_token && v.account_id),
+      });
+    }
+    if (key === "dify") {
+      useIntegrationsStore.getState().setDify({
+        url: v.url, dataset_id: v.dataset_id,
+        configured: Boolean(v.url && v.api_key && v.dataset_id),
+      });
+    }
   };
 
 

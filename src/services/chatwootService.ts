@@ -1,10 +1,7 @@
 /**
- * Chatwoot service — chama a API real do Chatwoot quando configurada.
- * As credenciais vêm do store `useIntegrationsStore`, populado pelo
- * bootstrap (server fn `getChatwootConfig`) a partir de `app_settings`.
- * Se a config estiver ausente, cai em vazio (ou mock com VITE_USE_MOCKS).
- *
- * Docs: https://www.chatwoot.com/developers/api/
+ * Chatwoot service — hoje é um wrapper fino sobre server functions em
+ * `@/lib/chatwoot.functions.ts`. Os tokens ficam no servidor.
+ * Mantemos os mappers exportados para o consumer realtime (ActionCable).
  */
 import { mockConversations } from "@/mocks/data";
 import { USE_MOCKS } from "@/lib/mocks";
@@ -17,28 +14,19 @@ import type {
   Message,
   Sentiment,
 } from "@/services/types";
+import {
+  chatwootListConversations,
+  chatwootGetConversation,
+  chatwootSendMessage,
+  chatwootSetAiHandling,
+  chatwootAssignAgent,
+  chatwootPing,
+} from "@/lib/chatwoot.functions";
 
 const cfg = () => useIntegrationsStore.getState().chatwoot;
 const isLive = () => isChatwootLive(cfg());
 const useMockFallback = () => !isLive() && USE_MOCKS;
 const delay = (ms = 200) => new Promise((r) => setTimeout(r, ms));
-
-const api = (path: string) => `${cfg().url}/api/v1/accounts/${cfg().account_id}${path}`;
-const headers = (extra: Record<string, string> = {}): HeadersInit => ({
-  api_access_token: cfg().user_token!,
-  "Content-Type": "application/json",
-  ...extra,
-});
-
-async function http<T>(input: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(input, init);
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`Chatwoot ${res.status}: ${body.slice(0, 200)}`);
-  }
-  return res.json() as Promise<T>;
-}
-
 
 // --- Mappers ----------------------------------------------------------------
 
@@ -126,22 +114,40 @@ export function mapConversation(c: CwConversation): Conversation {
   };
 }
 
+// --- Helpers ----------------------------------------------------------------
+
+async function blobToBase64(blob: Blob): Promise<string> {
+  const buf = await blob.arrayBuffer();
+  let bin = "";
+  const bytes = new Uint8Array(buf);
+  for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+async function attachmentsToPayload(atts?: Attachment[]) {
+  if (!atts || atts.length === 0) return undefined;
+  return Promise.all(
+    atts.map(async (a) => {
+      const blob = await fetch(a.url).then((r) => r.blob());
+      return { name: a.name, mime: a.mime, contentBase64: await blobToBase64(blob) };
+    }),
+  );
+}
+
 // --- Public API -------------------------------------------------------------
 
 export async function listConversations(): Promise<Conversation[]> {
   if (!isLive()) { await delay(); return useMockFallback() ? mockConversations : []; }
-  const data = await http<{ data: { payload: CwConversation[] } }>(
-    api(`/conversations?status=open&assignee_type=me&page=1`),
-    { headers: headers() },
-  );
-  return data.data.payload.map(mapConversation);
+  const data = await chatwootListConversations();
+  const payload = (data as { data: { payload: CwConversation[] } }).data.payload;
+  return payload.map(mapConversation);
 }
 
 export async function getConversation(id: string): Promise<Conversation | undefined> {
   if (!isLive()) { await delay(); return useMockFallback() ? mockConversations.find((c) => c.id === id) : undefined; }
-  const c = await http<CwConversation>(api(`/conversations/${id}`), { headers: headers() });
-  const msgs = await http<{ payload: CwMessage[] }>(api(`/conversations/${id}/messages`), { headers: headers() });
-  return mapConversation({ ...c, messages: msgs.payload });
+  const res = await chatwootGetConversation({ data: { id } });
+  const { conversation, messages } = res as { conversation: CwConversation; messages: CwMessage[] };
+  return mapConversation({ ...conversation, messages });
 }
 
 export async function sendMessage(
@@ -158,39 +164,16 @@ export async function sendMessage(
       timestamp: new Date().toISOString(), status: "delivered", attachments,
     };
   }
-
-  let res: Response;
-  if (attachments && attachments.length > 0) {
-    const fd = new FormData();
-    fd.append("content", content);
-    fd.append("message_type", "outgoing");
-    for (const a of attachments) {
-      const blob = await fetch(a.url).then((r) => r.blob());
-      fd.append("attachments[]", blob, a.name);
-    }
-    res = await fetch(api(`/conversations/${conversationId}/messages`), {
-      method: "POST",
-      headers: { api_access_token: cfg().user_token! },
-      body: fd,
-    });
-  } else {
-    res = await fetch(api(`/conversations/${conversationId}/messages`), {
-      method: "POST",
-      headers: headers(),
-      body: JSON.stringify({ content, message_type: "outgoing", private: false }),
-    });
-  }
-  if (!res.ok) throw new Error(`chatwoot_${res.status}`);
-  return mapMessage((await res.json()) as CwMessage);
+  const payload = await attachmentsToPayload(attachments);
+  const result = await chatwootSendMessage({
+    data: { conversationId, content, attachments: payload },
+  });
+  return mapMessage(result as CwMessage);
 }
 
 export async function assignAgent(conversationId: string, agentId: string): Promise<void> {
   if (!isLive()) return;
-  await http(api(`/conversations/${conversationId}/assignments`), {
-    method: "POST",
-    headers: headers(),
-    body: JSON.stringify({ assignee_id: agentId }),
-  });
+  await chatwootAssignAgent({ data: { conversationId, agentId } });
 }
 
 export async function listAutomations(conversationId: string): Promise<AutomationEvent[]> {
@@ -203,11 +186,7 @@ export const chatwootInboxId = () => cfg().inbox_id;
 /** Liga/desliga IA para uma conversa via custom_attributes. */
 export async function setAiHandling(conversationId: string, enabled: boolean): Promise<void> {
   if (!isLive()) return;
-  await http(api(`/conversations/${conversationId}/custom_attributes`), {
-    method: "POST",
-    headers: headers(),
-    body: JSON.stringify({ custom_attributes: { ai_handling: enabled } }),
-  });
+  await chatwootSetAiHandling({ data: { conversationId, enabled } });
 }
 
 /** Configuração para o consumer realtime (lida do store no momento do uso). */
@@ -216,27 +195,14 @@ export const getChatwootRealtimeConfig = () => {
   return { baseUrl: c.url, pubsubToken: c.pubsub_token, accountId: c.account_id };
 };
 
-
 /**
- * Testa credenciais Chatwoot sem depender do store: bate em /api/v1/accounts/{id}
- * e retorna ok/erro legível. Usado no formulário de integrações antes de salvar.
+ * Ping (usado no formulário de integrações). Roda no servidor com as
+ * credenciais informadas pelo admin — não persiste nada.
  */
 export async function pingChatwoot(input: {
   url?: string; user_token?: string; account_id?: string;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const { url, user_token, account_id } = input;
   if (!url || !user_token || !account_id) return { ok: false, error: "URL, User Token e Account ID são obrigatórios." };
-  const base = url.replace(/\/+$/, "");
-  try {
-    const res = await fetch(`${base}/api/v1/accounts/${account_id}`, {
-      headers: { api_access_token: user_token, "Content-Type": "application/json" },
-    });
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      return { ok: false, error: `Chatwoot respondeu ${res.status}: ${body.slice(0, 120) || "sem corpo"}` };
-    }
-    return { ok: true };
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "falha de rede" };
-  }
+  return chatwootPing({ data: { url, user_token, account_id } });
 }

@@ -1,31 +1,22 @@
 /**
- * Dify service — Knowledge (datasets/documents) e Chat completion.
- * Credenciais vêm do store `useIntegrationsStore`, populado pelo bootstrap
- * (server fn `getDifyConfig`) a partir de `app_settings`.
- *
- * Docs: https://docs.dify.ai/guides/knowledge-base/maintain-knowledge-base-via-api
- *       https://docs.dify.ai/guides/application-publishing/developing-with-apis
+ * Dify service — wrapper fino sobre server functions em
+ * `@/lib/dify.functions.ts`. A `api_key` fica no servidor.
  */
 import { mockKnowledgeDocs, mockQA } from "@/mocks/data";
 import { USE_MOCKS } from "@/lib/mocks";
 import { isDifyLive, useIntegrationsStore } from "@/stores/integrationsStore";
 import type { KnowledgeDoc, QAPair } from "@/services/types";
+import {
+  difyListDocuments,
+  difyUploadDocument,
+  difyRemoveDocument,
+  difyAsk,
+  difyPing,
+} from "@/lib/dify.functions";
 
 const cfg = () => useIntegrationsStore.getState().dify;
 const isLive = () => isDifyLive(cfg());
 const delay = (ms = 200) => new Promise((r) => setTimeout(r, ms));
-
-const auth = (): HeadersInit => ({ Authorization: `Bearer ${cfg().api_key!}` });
-const json = (): HeadersInit => ({ ...auth(), "Content-Type": "application/json" });
-
-async function http<T>(input: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(input, init);
-  if (!res.ok) throw new Error(`Dify ${res.status}: ${(await res.text()).slice(0, 200)}`);
-  return res.json() as Promise<T>;
-}
-
-
-// --- Knowledge --------------------------------------------------------------
 
 interface DifyDoc {
   id: string; name: string;
@@ -38,13 +29,19 @@ const sizeLabel = (words?: number) => (words ? `${Math.round(words / 250)} KB` :
 const statusMap = (s?: string): KnowledgeDoc["status"] =>
   s === "indexed" || s === "available" ? "indexed" : s === "error" ? "error" : "indexing";
 
+async function blobToBase64(blob: Blob): Promise<string> {
+  const buf = await blob.arrayBuffer();
+  let bin = "";
+  const bytes = new Uint8Array(buf);
+  for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
 export async function listKnowledgeDocuments(): Promise<KnowledgeDoc[]> {
   if (!isLive()) { await delay(); return USE_MOCKS ? mockKnowledgeDocs : []; }
-  const data = await http<{ data: DifyDoc[] }>(
-    `${cfg().url}/v1/datasets/${cfg().dataset_id}/documents?page=1&limit=50`,
-    { headers: auth() },
-  );
-  return data.data.map((d) => ({
+  const data = await difyListDocuments();
+  const docs = (data as { data: DifyDoc[] }).data;
+  return docs.map((d) => ({
     id: d.id,
     name: d.name,
     type: (d.name.split(".").pop() ?? "FILE").toUpperCase(),
@@ -65,40 +62,25 @@ export async function uploadDocument(file: File): Promise<KnowledgeDoc> {
       updatedAt: new Date().toISOString().slice(0, 10),
     };
   }
-  const fd = new FormData();
-  fd.append("file", file, file.name);
-  fd.append(
-    "data",
-    JSON.stringify({
-      indexing_technique: "high_quality",
-      process_rule: { mode: "automatic" },
-    }),
-  );
-  const res = await fetch(
-    `${cfg().url}/v1/datasets/${cfg().dataset_id}/document/create-by-file`,
-    { method: "POST", headers: auth(), body: fd },
-  );
-  if (!res.ok) throw new Error(`dify_upload_${res.status}`);
-  const out = (await res.json()) as { document: DifyDoc };
+  const contentBase64 = await blobToBase64(file);
+  const out = await difyUploadDocument({
+    data: { name: file.name, mime: file.type || "application/octet-stream", contentBase64 },
+  });
+  const doc = (out as { document: DifyDoc }).document;
   return {
-    id: out.document.id,
-    name: out.document.name,
+    id: doc.id,
+    name: doc.name,
     type: file.name.split(".").pop()?.toUpperCase() ?? "FILE",
     size: `${Math.round(file.size / 1024)} KB`,
-    status: statusMap(out.document.display_status),
+    status: statusMap(doc.display_status),
     updatedAt: new Date().toISOString().slice(0, 10),
   };
 }
 
 export async function removeDocument(id: string): Promise<void> {
   if (!isLive()) { await delay(); return; }
-  const res = await fetch(`${cfg().url}/v1/datasets/${cfg().dataset_id}/documents/${id}`, {
-    method: "DELETE", headers: auth(),
-  });
-  if (!res.ok) throw new Error(`dify_delete_${res.status}`);
+  await difyRemoveDocument({ data: { id } });
 }
-
-// --- Q&A pairs (segments) ---------------------------------------------------
 
 export async function listQAPairs(): Promise<QAPair[]> {
   await delay();
@@ -112,8 +94,6 @@ export async function addQAPair(question: string, answer: string): Promise<QAPai
     updatedAt: new Date().toISOString().slice(0, 10),
   };
 }
-
-// --- Chat completion (RAG) --------------------------------------------------
 
 export interface DifyAnswer {
   answer: string;
@@ -134,38 +114,14 @@ export async function askDify(
       conversation_id: conversationId,
     };
   }
-  return http<DifyAnswer>(`${cfg().url}/v1/chat-messages`, {
-    method: "POST",
-    headers: json(),
-    body: JSON.stringify({
-      inputs: {},
-      query,
-      user,
-      response_mode: "blocking",
-      conversation_id: conversationId ?? "",
-    }),
-  });
+  const out = await difyAsk({ data: { query, user, conversationId } });
+  return out as DifyAnswer;
 }
 
-/**
- * Testa credenciais Dify: lista datasets para validar api_key + dataset_id.
- */
 export async function pingDify(input: {
   url?: string; api_key?: string; dataset_id?: string;
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const { url, api_key, dataset_id } = input;
   if (!url || !api_key || !dataset_id) return { ok: false, error: "URL, API Key e Dataset ID são obrigatórios." };
-  const base = url.replace(/\/+$/, "");
-  try {
-    const res = await fetch(`${base}/v1/datasets/${dataset_id}/documents?page=1&limit=1`, {
-      headers: { Authorization: `Bearer ${api_key}` },
-    });
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      return { ok: false, error: `Dify respondeu ${res.status}: ${body.slice(0, 120) || "sem corpo"}` };
-    }
-    return { ok: true };
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "falha de rede" };
-  }
+  return difyPing({ data: { url, api_key, dataset_id } });
 }

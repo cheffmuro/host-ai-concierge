@@ -3,6 +3,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { useIntegrationsBootstrap } from "@/hooks/useIntegrationsBootstrap";
+import { useOnboardingGuard } from "@/hooks/useOnboardingGuard";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -32,6 +33,7 @@ function AuthenticatedLayout() {
   const path = useRouterState({ select: (r) => r.location.pathname });
   const title = titles[path] ?? "Anfitrião";
   useIntegrationsBootstrap();
+  useOnboardingGuard();
 
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">Carregando…</div>;
