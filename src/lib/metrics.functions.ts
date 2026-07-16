@@ -74,7 +74,7 @@ async function hasValidCallerSession(): Promise<boolean> {
     });
 
     const { data, error } = await supabase.auth.getClaims(token);
-    if (error || !data.claims?.sub) {
+    if (error || !data?.claims?.sub) {
       console.error("getDashboardMetrics: sessão ausente ou expirada");
       return false;
     }
