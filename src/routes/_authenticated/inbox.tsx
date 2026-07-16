@@ -16,6 +16,7 @@ import type {
   Conversation, Message, MessageStatus, Sentiment,
 } from "@/services/types";
 import { ChannelIcon, channelLabel } from "@/components/channel-icon";
+import { IntegrationsBanner } from "@/components/integrations-banner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

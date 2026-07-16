@@ -5,6 +5,7 @@ import { mockMetrics, mockConversations } from "@/mocks/data";
 import { USE_MOCKS } from "@/lib/mocks";
 import { Badge } from "@/components/ui/badge";
 import { ChannelIcon, channelLabel } from "@/components/channel-icon";
+import { IntegrationsBanner } from "@/components/integrations-banner";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -51,6 +52,7 @@ function DashboardPage() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
+      <IntegrationsBanner />
       {empty && (
         <Card className="rounded-sm border-amber-200 bg-amber-50 shadow-none">
           <CardContent className="py-4 text-sm text-amber-900">
