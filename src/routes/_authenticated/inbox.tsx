@@ -346,7 +346,15 @@ function InboxPage() {
                         </span>
                       </div>
                       <p className="mt-0.5 truncate text-xs text-slate-500">{c.preview}</p>
-                      <div className="mt-2 flex items-center gap-2">
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                        {isCritical(c) && (
+                          <Badge variant="outline" className="rounded-sm border-rose-300 bg-rose-50 px-1.5 py-0 text-[10px] font-medium text-rose-700 gap-1">
+                            <AlertTriangle className="h-3 w-3" strokeWidth={1.5} /> Crítico
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="rounded-sm border-border/60 px-1.5 py-0 text-[10px] font-normal text-slate-500 gap-1">
+                          <Clock className="h-3 w-3" strokeWidth={1.5} /> {formatSla(waitMinutes(c))}
+                        </Badge>
                         <Badge variant="outline" className="rounded-sm border-border/60 px-1.5 py-0 text-[10px] font-normal text-slate-500 gap-1">
                           <ChannelIcon channel={c.channel} className="h-3 w-3" />
                           {channelLabel[c.channel]}
