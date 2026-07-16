@@ -21,6 +21,8 @@ const titles: Record<string, string> = {
   "/profile": "Perfil",
 };
 
+const protectedPaths = ["/dashboard", "/inbox", "/channels", "/brain", "/workflows", "/settings", "/profile"];
+
 function AuthenticatedLayout() {
   const { loading, user, session } = useAuth();
   const navigate = useNavigate();
@@ -30,7 +32,7 @@ function AuthenticatedLayout() {
   useOnboardingGuard();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !user && protectedPaths.some((p) => path.startsWith(p))) {
       navigate({ to: "/login", search: { redirect: path }, replace: true });
     }
   }, [loading, user, navigate, path]);
