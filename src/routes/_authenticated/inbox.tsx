@@ -324,6 +324,7 @@ function InboxPage() {
           {selected && <ContextPanel conversation={selected} />}
         </SheetContent>
       </Sheet>
+      </div>
     </div>
   );
 }
