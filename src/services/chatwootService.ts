@@ -34,6 +34,8 @@ function mapChannel(channel?: string): Channel {
   if (!channel) return "web";
   const c = channel.toLowerCase();
   if (c.includes("whatsapp")) return "whatsapp";
+  if (c.includes("instagram")) return "instagram";
+  if (c.includes("facebook") || c.includes("messenger")) return "facebook";
   if (c.includes("email")) return "email";
   return "web";
 }
@@ -60,7 +62,7 @@ interface CwConversation {
   status: string;
   unread_count: number;
   last_activity_at: number;
-  meta: { sender: { name: string; identifier?: string } };
+  meta: { sender: { name: string; identifier?: string; email?: string; phone_number?: string } };
   labels?: string[];
   custom_attributes?: Record<string, unknown>;
   messages?: CwMessage[];
@@ -92,10 +94,13 @@ export function mapMessage(m: CwMessage): Message {
 
 export function mapConversation(c: CwConversation): Conversation {
   const name = c.meta?.sender?.name || "Cliente";
+  const identifier =
+    c.meta?.sender?.email || c.meta?.sender?.phone_number || c.meta?.sender?.identifier;
   return {
     id: String(c.id),
     customerName: name,
     customerInitials: initials(name),
+    customerIdentifier: identifier,
     channel: mapChannel(c.channel),
     sentiment: mapSentiment(c.labels),
     preview: c.messages?.[c.messages.length - 1]?.content ?? "",

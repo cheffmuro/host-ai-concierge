@@ -73,8 +73,10 @@ function GuidePage() {
           <li><a href="#prereqs" className="text-slate-700 hover:underline">0. Pré-requisitos da VPS</a></li>
           <li><a href="#chatwoot" className="text-slate-700 hover:underline">1. Chatwoot</a></li>
           <li><a href="#evolution" className="text-slate-700 hover:underline">2. Evolution API (WhatsApp)</a></li>
-          <li><a href="#dify" className="text-slate-700 hover:underline">3. Dify (RAG)</a></li>
-          <li><a href="#n8n" className="text-slate-700 hover:underline">4. n8n (Webhooks)</a></li>
+          <li><a href="#meta" className="text-slate-700 hover:underline">3. Instagram e Facebook</a></li>
+          <li><a href="#dify" className="text-slate-700 hover:underline">4. Dify (RAG)</a></li>
+          <li><a href="#n8n" className="text-slate-700 hover:underline">5. n8n (Webhooks)</a></li>
+          <li><a href="#context" className="text-slate-700 hover:underline">6. Contexto do cliente (ML/site/loja)</a></li>
         </ul>
       </nav>
 
@@ -171,8 +173,73 @@ bash /opt/host-ai-concierge/infra/evolution/create-instance.sh principal`}
       </Section>
 
       <Section
+        id="meta"
+        title="3. Instagram e Facebook (Meta)"
+        subtitle="Conecta as DMs do Instagram e mensagens da página do Facebook direto no Chatwoot."
+      >
+        <ol className="space-y-3">
+          <Step n={1}>
+            Você precisa de uma <strong>Página do Facebook</strong> e, para Instagram, de uma
+            conta <em>Business/Creator</em> vinculada a essa página. Confirme em{" "}
+            <a
+              href="https://business.facebook.com/settings/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              Meta Business Suite → Configurações
+            </a>.
+          </Step>
+          <Step n={2}>
+            No Chatwoot, abra <em>Settings → Inboxes → Add Inbox → Facebook</em>. Clique em{" "}
+            <em>Sign in with Facebook</em>, autorize o app e selecione as páginas que quer conectar.
+            Ao final, cada página conectada vira uma inbox (uma para <em>Facebook Messenger</em>,
+            outra para <em>Instagram Direct</em> se a página estiver ligada a uma conta IG).
+          </Step>
+          <Step n={3}>
+            Se o botão pedir configuração de <em>Facebook App ID</em> / <em>App Secret</em>, é
+            porque a instância Chatwoot self-hosted ainda não tem o app Meta configurado. Crie um
+            app em{" "}
+            <a
+              href="https://developers.facebook.com/apps/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              developers.facebook.com/apps
+            </a>{" "}
+            (tipo <em>Business</em>), adicione os produtos <em>Facebook Login</em>,{" "}
+            <em>Messenger</em> e <em>Instagram Messaging</em>, e defina as ENV{" "}
+            <Code>FB_APP_ID</Code> e <Code>FB_APP_SECRET</Code> no{" "}
+            <Code>infra/.env</Code> da VPS. Reinicie: <Code>docker compose up -d</Code>.
+          </Step>
+          <Step n={4}>
+            Autorize a URL de callback do Chatwoot no app Meta:{" "}
+            <Code>https://chat.seudominio.com.br/omniauth/facebook/callback</Code>.
+          </Step>
+          <Step n={5}>
+            <strong>Instagram</strong>: com a conta IG Business vinculada à Página, a inbox do
+            Instagram aparece automaticamente após a autorização. Envie um DM de teste para a
+            conta e ele deve cair na <Link to="/inbox" className="text-blue-600 hover:underline">Inbox</Link>.
+          </Step>
+          <Step n={6}>
+            Nada a fazer em <em>Integrações</em> — o Chatwoot já centraliza. O Anfitrião reconhece
+            os canais Instagram e Facebook automaticamente (ícones e filtros na inbox).
+          </Step>
+        </ol>
+        <a
+          href="https://www.chatwoot.com/docs/product/channels/facebook/create-facebook-app"
+          target="_blank"
+          rel="noreferrer"
+          className="mt-4 inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900"
+        >
+          Documentação oficial <ExternalLink className="h-3 w-3" />
+        </a>
+      </Section>
+
+      <Section
         id="dify"
-        title="3. Dify (RAG)"
+        title="4. Dify (RAG)"
         subtitle="Base de conhecimento e completion da IA."
       >
         <ol className="space-y-3">
@@ -207,7 +274,7 @@ bash /opt/host-ai-concierge/infra/evolution/create-instance.sh principal`}
 
       <Section
         id="n8n"
-        title="4. n8n (Webhooks)"
+        title="5. n8n (Webhooks)"
         subtitle="Orquestra handoff humano, logística reversa e o pipeline RAG."
       >
         <ol className="space-y-3">
@@ -248,8 +315,76 @@ bash /opt/host-ai-concierge/infra/evolution/create-instance.sh principal`}
         </ol>
       </Section>
 
+      <Section
+        id="context"
+        title="6. Contexto do cliente (Mercado Livre, site próprio, loja)"
+        subtitle="Traz LTV, ticket médio, pedidos e histórico de compras para o painel da conversa."
+      >
+        <p className="mb-4 text-sm text-slate-600">
+          O painel lê a tabela <Code>customer_context</Code>. Qualquer sistema externo
+          (Mercado Livre, seu site, seu ERP/loja) empurra os dados via webhook
+          assinado. Você pode chamar direto do backend do site/loja, ou usar um
+          workflow no n8n para consumir a API do Mercado Livre e reencaminhar.
+        </p>
+        <ol className="space-y-3">
+          <Step n={1}>
+            <strong>Endpoint</strong>:{" "}
+            <Code>POST https://host-concierge.lovable.app/api/public/customer-context</Code>
+          </Step>
+          <Step n={2}>
+            <strong>Headers</strong>:{" "}
+            <Code>Content-Type: application/json</Code> e{" "}
+            <Code>x-webhook-signature: &lt;HMAC-SHA256(body, SEGREDO)&gt;</Code>.
+            O segredo está salvo no backend como{" "}
+            <Code>CUSTOMER_CONTEXT_WEBHOOK_SECRET</Code>. Peça a um admin para revelar
+            (Backend → Secrets) e configure na origem.
+          </Step>
+          <Step n={3}>
+            <strong>Payload</strong> (campos marcados com * são obrigatórios):
+            <pre className="mt-2 overflow-x-auto rounded bg-slate-900 p-3 text-[12px] text-slate-100">
+{`{
+  "identifier": "maria@exemplo.com",     // * chave (e-mail, telefone ou doc)
+  "source": "mercadolivre",               // mercadolivre | site | loja | outro
+  "name": "Maria Silva",
+  "email": "maria@exemplo.com",
+  "phone": "+5511999990000",
+  "external_id": "ML-12345",
+  "ltv": 1250.90,
+  "average_ticket": 320.10,
+  "total_orders": 4,
+  "last_purchases": [
+    { "id": "ord_1", "item": "Cafeteira X1", "date": "2026-05-01", "amount": 320.10 }
+  ],
+  "tags": ["vip", "recorrente"],
+  "notes": "Cliente VIP desde 2023"
+}`}
+            </pre>
+          </Step>
+          <Step n={4}>
+            <strong>Mercado Livre</strong>: crie um workflow no n8n com o nó{" "}
+            <em>Mercado Livre → Get Orders</em> (autenticado no seu vendedor),
+            agrupe por comprador, calcule LTV/ticket, e mande no webhook acima.
+            Rode a cada 6h com o nó <em>Cron</em>.
+          </Step>
+          <Step n={5}>
+            <strong>Site próprio / loja</strong>: adicione uma chamada ao endpoint
+            no seu backend a cada pedido novo (checkout finalizado). Assine o corpo
+            com HMAC-SHA256 usando o mesmo segredo.
+          </Step>
+          <Step n={6}>
+            Verifique: envie um POST de teste (via <em>curl</em>, Postman ou n8n) e abra a
+            conversa desse cliente na <Link to="/inbox" className="text-blue-600 hover:underline">Inbox</Link>.
+            O painel lateral vai mostrar LTV, ticket médio e as últimas compras.
+          </Step>
+        </ol>
+        <div className="mt-4 rounded-md border border-slate-200 bg-slate-50 p-3 text-[12px] text-slate-600">
+          <strong>Exemplo de assinatura</strong> (Node):{" "}
+          <Code>{"crypto.createHmac('sha256', SECRET).update(body).digest('hex')"}</Code>
+        </div>
+      </Section>
+
       <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-        Pronto! Quando os 4 cards de <Link to="/settings/integrations" className="font-medium underline">Integrações</Link> aparecerem como <strong>Configurado</strong>, o Anfitrião está operacional. Mande uma mensagem de teste para o WhatsApp conectado e acompanhe a conversa no <Link to="/inbox" className="font-medium underline">Inbox</Link>.
+        Pronto! Quando os cards de <Link to="/settings/integrations" className="font-medium underline">Integrações</Link> aparecerem como <strong>Configurado</strong>, as inboxes de Meta (Instagram/Facebook) estiverem conectadas no Chatwoot e o webhook de contexto do cliente estiver rodando, o Anfitrião está operacional. Mande uma mensagem de teste e acompanhe no <Link to="/inbox" className="font-medium underline">Inbox</Link>.
       </div>
     </div>
   );

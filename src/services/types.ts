@@ -1,4 +1,4 @@
-export type Channel = "whatsapp" | "email" | "web";
+export type Channel = "whatsapp" | "email" | "web" | "instagram" | "facebook";
 export type Sentiment = "frustrated" | "neutral" | "satisfied";
 export type MessageAuthor = "customer" | "agent" | "ai";
 export type MessageStatus = "sending" | "queued" | "delivered" | "error";
@@ -36,20 +36,31 @@ export interface AutomationEvent {
   payload?: Record<string, unknown>;
 }
 
+export interface CustomerPurchase {
+  id: string;
+  item: string;
+  date: string;
+  amount: number;
+}
+
 export interface CustomerContext {
   ltv: number;
   averageTicket: number;
   totalOrders: number;
-  lastPurchases: { id: string; item: string; date: string; amount: number }[];
+  lastPurchases: CustomerPurchase[];
   tags: string[];
   aiReasoning?: string;
   automations: AutomationEvent[];
+  source?: string;
+  notes?: string;
+  externalId?: string;
 }
 
 export interface Conversation {
   id: string;
   customerName: string;
   customerInitials: string;
+  customerIdentifier?: string;
   channel: Channel;
   sentiment: Sentiment;
   preview: string;

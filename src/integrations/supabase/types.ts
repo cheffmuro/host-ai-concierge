@@ -38,6 +38,63 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_context: {
+        Row: {
+          average_ticket: number
+          created_at: string
+          email: string | null
+          external_id: string | null
+          id: string
+          identifier: string
+          last_purchases: Json
+          ltv: number
+          name: string | null
+          notes: string | null
+          payload: Json
+          phone: string | null
+          source: string
+          tags: string[]
+          total_orders: number
+          updated_at: string
+        }
+        Insert: {
+          average_ticket?: number
+          created_at?: string
+          email?: string | null
+          external_id?: string | null
+          id?: string
+          identifier: string
+          last_purchases?: Json
+          ltv?: number
+          name?: string | null
+          notes?: string | null
+          payload?: Json
+          phone?: string | null
+          source?: string
+          tags?: string[]
+          total_orders?: number
+          updated_at?: string
+        }
+        Update: {
+          average_ticket?: number
+          created_at?: string
+          email?: string | null
+          external_id?: string | null
+          id?: string
+          identifier?: string
+          last_purchases?: Json
+          ltv?: number
+          name?: string | null
+          notes?: string | null
+          payload?: Json
+          phone?: string | null
+          source?: string
+          tags?: string[]
+          total_orders?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
