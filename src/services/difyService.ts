@@ -1,22 +1,21 @@
 /**
  * Dify service — Knowledge (datasets/documents) e Chat completion.
- * Cai em mock se VITE_DIFY_URL/API_KEY não estiverem definidas.
+ * Credenciais vêm do store `useIntegrationsStore`, populado pelo bootstrap
+ * (server fn `getDifyConfig`) a partir de `app_settings`.
  *
  * Docs: https://docs.dify.ai/guides/knowledge-base/maintain-knowledge-base-via-api
  *       https://docs.dify.ai/guides/application-publishing/developing-with-apis
  */
 import { mockKnowledgeDocs, mockQA } from "@/mocks/data";
 import { USE_MOCKS } from "@/lib/mocks";
+import { isDifyLive, useIntegrationsStore } from "@/stores/integrationsStore";
 import type { KnowledgeDoc, QAPair } from "@/services/types";
 
-const BASE = import.meta.env.VITE_DIFY_URL as string | undefined;
-const KEY = import.meta.env.VITE_DIFY_API_KEY as string | undefined;
-const DATASET = import.meta.env.VITE_DIFY_DATASET_ID as string | undefined;
-
-const isLive = Boolean(BASE && KEY && DATASET);
+const cfg = () => useIntegrationsStore.getState().dify;
+const isLive = () => isDifyLive(cfg());
 const delay = (ms = 200) => new Promise((r) => setTimeout(r, ms));
 
-const auth = (): HeadersInit => ({ Authorization: `Bearer ${KEY!}` });
+const auth = (): HeadersInit => ({ Authorization: `Bearer ${cfg().api_key!}` });
 const json = (): HeadersInit => ({ ...auth(), "Content-Type": "application/json" });
 
 async function http<T>(input: string, init?: RequestInit): Promise<T> {
@@ -24,6 +23,7 @@ async function http<T>(input: string, init?: RequestInit): Promise<T> {
   if (!res.ok) throw new Error(`Dify ${res.status}: ${(await res.text()).slice(0, 200)}`);
   return res.json() as Promise<T>;
 }
+
 
 // --- Knowledge --------------------------------------------------------------
 
@@ -39,9 +39,9 @@ const statusMap = (s?: string): KnowledgeDoc["status"] =>
   s === "indexed" || s === "available" ? "indexed" : s === "error" ? "error" : "indexing";
 
 export async function listKnowledgeDocuments(): Promise<KnowledgeDoc[]> {
-  if (!isLive) { await delay(); return USE_MOCKS ? mockKnowledgeDocs : []; }
+  if (!isLive()) { await delay(); return USE_MOCKS ? mockKnowledgeDocs : []; }
   const data = await http<{ data: DifyDoc[] }>(
-    `${BASE}/v1/datasets/${DATASET}/documents?page=1&limit=50`,
+    `${cfg().url}/v1/datasets/${cfg().dataset_id}/documents?page=1&limit=50`,
     { headers: auth() },
   );
   return data.data.map((d) => ({
@@ -55,7 +55,7 @@ export async function listKnowledgeDocuments(): Promise<KnowledgeDoc[]> {
 }
 
 export async function uploadDocument(file: File): Promise<KnowledgeDoc> {
-  if (!isLive) {
+  if (!isLive()) {
     await delay();
     return {
       id: `d_${Date.now()}`, name: file.name,
@@ -75,7 +75,7 @@ export async function uploadDocument(file: File): Promise<KnowledgeDoc> {
     }),
   );
   const res = await fetch(
-    `${BASE}/v1/datasets/${DATASET}/document/create-by-file`,
+    `${cfg().url}/v1/datasets/${cfg().dataset_id}/document/create-by-file`,
     { method: "POST", headers: auth(), body: fd },
   );
   if (!res.ok) throw new Error(`dify_upload_${res.status}`);
@@ -91,8 +91,8 @@ export async function uploadDocument(file: File): Promise<KnowledgeDoc> {
 }
 
 export async function removeDocument(id: string): Promise<void> {
-  if (!isLive) { await delay(); return; }
-  const res = await fetch(`${BASE}/v1/datasets/${DATASET}/documents/${id}`, {
+  if (!isLive()) { await delay(); return; }
+  const res = await fetch(`${cfg().url}/v1/datasets/${cfg().dataset_id}/documents/${id}`, {
     method: "DELETE", headers: auth(),
   });
   if (!res.ok) throw new Error(`dify_delete_${res.status}`);
@@ -127,14 +127,14 @@ export async function askDify(
   user = "host-ai-concierge-agent",
   conversationId?: string,
 ): Promise<DifyAnswer> {
-  if (!isLive) {
+  if (!isLive()) {
     await delay(600);
     return {
       answer: `(mock) Baseado no que sei, sugiro: ${query.slice(0, 80)}…`,
       conversation_id: conversationId,
     };
   }
-  return http<DifyAnswer>(`${BASE}/v1/chat-messages`, {
+  return http<DifyAnswer>(`${cfg().url}/v1/chat-messages`, {
     method: "POST",
     headers: json(),
     body: JSON.stringify({

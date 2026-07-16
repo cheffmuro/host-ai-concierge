@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/rea
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useAuth } from "@/hooks/useAuth";
+import { useIntegrationsBootstrap } from "@/hooks/useIntegrationsBootstrap";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -30,6 +31,7 @@ function AuthenticatedLayout() {
   const { loading, user } = useAuth();
   const path = useRouterState({ select: (r) => r.location.pathname });
   const title = titles[path] ?? "Anfitrião";
+  useIntegrationsBootstrap();
 
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">Carregando…</div>;

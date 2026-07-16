@@ -1,12 +1,14 @@
 /**
  * Chatwoot service — chama a API real do Chatwoot quando configurada.
- * Se VITE_CHATWOOT_URL/USER_TOKEN/ACCOUNT_ID estiverem ausentes, cai em mock
- * (útil para preview na Vercel antes do back-end estar no ar).
+ * As credenciais vêm do store `useIntegrationsStore`, populado pelo
+ * bootstrap (server fn `getChatwootConfig`) a partir de `app_settings`.
+ * Se a config estiver ausente, cai em vazio (ou mock com VITE_USE_MOCKS).
  *
  * Docs: https://www.chatwoot.com/developers/api/
  */
 import { mockConversations } from "@/mocks/data";
 import { USE_MOCKS } from "@/lib/mocks";
+import { isChatwootLive, useIntegrationsStore } from "@/stores/integrationsStore";
 import type {
   Attachment,
   AutomationEvent,
@@ -16,18 +18,14 @@ import type {
   Sentiment,
 } from "@/services/types";
 
-const BASE = import.meta.env.VITE_CHATWOOT_URL as string | undefined;
-const TOKEN = import.meta.env.VITE_CHATWOOT_USER_TOKEN as string | undefined;
-const ACCOUNT_ID = import.meta.env.VITE_CHATWOOT_ACCOUNT_ID as string | undefined;
-const INBOX_ID = import.meta.env.VITE_CHATWOOT_INBOX_ID as string | undefined;
-
-const isLive = Boolean(BASE && TOKEN && ACCOUNT_ID);
-const useMockFallback = () => !isLive && USE_MOCKS;
+const cfg = () => useIntegrationsStore.getState().chatwoot;
+const isLive = () => isChatwootLive(cfg());
+const useMockFallback = () => !isLive() && USE_MOCKS;
 const delay = (ms = 200) => new Promise((r) => setTimeout(r, ms));
 
-const api = (path: string) => `${BASE}/api/v1/accounts/${ACCOUNT_ID}${path}`;
+const api = (path: string) => `${cfg().url}/api/v1/accounts/${cfg().account_id}${path}`;
 const headers = (extra: Record<string, string> = {}): HeadersInit => ({
-  api_access_token: TOKEN!,
+  api_access_token: cfg().user_token!,
   "Content-Type": "application/json",
   ...extra,
 });
@@ -40,6 +38,7 @@ async function http<T>(input: string, init?: RequestInit): Promise<T> {
   }
   return res.json() as Promise<T>;
 }
+
 
 // --- Mappers ----------------------------------------------------------------
 
@@ -130,7 +129,7 @@ export function mapConversation(c: CwConversation): Conversation {
 // --- Public API -------------------------------------------------------------
 
 export async function listConversations(): Promise<Conversation[]> {
-  if (!isLive) { await delay(); return useMockFallback() ? mockConversations : []; }
+  if (!isLive()) { await delay(); return useMockFallback() ? mockConversations : []; }
   const data = await http<{ data: { payload: CwConversation[] } }>(
     api(`/conversations?status=open&assignee_type=me&page=1`),
     { headers: headers() },
@@ -139,7 +138,7 @@ export async function listConversations(): Promise<Conversation[]> {
 }
 
 export async function getConversation(id: string): Promise<Conversation | undefined> {
-  if (!isLive) { await delay(); return useMockFallback() ? mockConversations.find((c) => c.id === id) : undefined; }
+  if (!isLive()) { await delay(); return useMockFallback() ? mockConversations.find((c) => c.id === id) : undefined; }
   const c = await http<CwConversation>(api(`/conversations/${id}`), { headers: headers() });
   const msgs = await http<{ payload: CwMessage[] }>(api(`/conversations/${id}/messages`), { headers: headers() });
   return mapConversation({ ...c, messages: msgs.payload });
@@ -150,7 +149,7 @@ export async function sendMessage(
   content: string,
   attachments?: Attachment[],
 ): Promise<Message> {
-  if (!isLive) {
+  if (!isLive()) {
     await delay(450);
     if (typeof navigator !== "undefined" && !navigator.onLine) throw new Error("offline");
     if (Math.random() < 0.25) throw new Error("network_unstable");
@@ -171,7 +170,7 @@ export async function sendMessage(
     }
     res = await fetch(api(`/conversations/${conversationId}/messages`), {
       method: "POST",
-      headers: { api_access_token: TOKEN! },
+      headers: { api_access_token: cfg().user_token! },
       body: fd,
     });
   } else {
@@ -186,7 +185,7 @@ export async function sendMessage(
 }
 
 export async function assignAgent(conversationId: string, agentId: string): Promise<void> {
-  if (!isLive) return;
+  if (!isLive()) return;
   await http(api(`/conversations/${conversationId}/assignments`), {
     method: "POST",
     headers: headers(),
@@ -195,15 +194,15 @@ export async function assignAgent(conversationId: string, agentId: string): Prom
 }
 
 export async function listAutomations(conversationId: string): Promise<AutomationEvent[]> {
-  if (!isLive) return useMockFallback() ? (mockConversations.find((c) => c.id === conversationId)?.context.automations ?? []) : [];
+  if (!isLive()) return useMockFallback() ? (mockConversations.find((c) => c.id === conversationId)?.context.automations ?? []) : [];
   return [];
 }
 
-export const chatwootInboxId = INBOX_ID;
+export const chatwootInboxId = () => cfg().inbox_id;
 
 /** Liga/desliga IA para uma conversa via custom_attributes. */
 export async function setAiHandling(conversationId: string, enabled: boolean): Promise<void> {
-  if (!isLive) return;
+  if (!isLive()) return;
   await http(api(`/conversations/${conversationId}/custom_attributes`), {
     method: "POST",
     headers: headers(),
@@ -211,10 +210,9 @@ export async function setAiHandling(conversationId: string, enabled: boolean): P
   });
 }
 
-/** Configuração para o consumer realtime. */
-export const chatwootRealtimeConfig = {
-  baseUrl: BASE,
-  pubsubToken: import.meta.env.VITE_CHATWOOT_PUBSUB_TOKEN as string | undefined,
-  accountId: ACCOUNT_ID,
+/** Configuração para o consumer realtime (lida do store no momento do uso). */
+export const getChatwootRealtimeConfig = () => {
+  const c = cfg();
+  return { baseUrl: c.url, pubsubToken: c.pubsub_token, accountId: c.account_id };
 };
 
