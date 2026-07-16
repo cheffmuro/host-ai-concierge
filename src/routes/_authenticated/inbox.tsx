@@ -229,7 +229,11 @@ function InboxPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-3rem)] min-h-0 bg-slate-50">
+    <div className="flex h-[calc(100vh-3rem)] min-h-0 flex-col bg-slate-50">
+      <div className="border-b border-border/60 bg-white px-3 py-2">
+        <IntegrationsBanner compact />
+      </div>
+      <div className="flex flex-1 min-h-0">
       <aside className={`${selected ? "hidden lg:flex" : "flex"} w-full lg:w-[30%] lg:max-w-sm flex-col border-r border-border/60 bg-white`}>
         <div className="border-b border-border/60 p-3 space-y-2">
           <div className="relative">
