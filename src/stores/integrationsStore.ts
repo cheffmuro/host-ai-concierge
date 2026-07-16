@@ -33,12 +33,12 @@ const envDify: DifyConfig = {
   dataset_id: import.meta.env.VITE_DIFY_DATASET_ID as string | undefined,
 };
 
-const merge = <T extends Record<string, unknown>>(a: T, b: T): T => {
-  const out = { ...a };
-  for (const [k, v] of Object.entries(b)) {
-    if (v !== undefined && v !== null && v !== "") (out as Record<string, unknown>)[k] = v;
+const merge = <T extends object>(a: T, b: T): T => {
+  const out: Record<string, unknown> = { ...(a as Record<string, unknown>) };
+  for (const [k, v] of Object.entries(b as Record<string, unknown>)) {
+    if (v !== undefined && v !== null && v !== "") out[k] = v;
   }
-  return out;
+  return out as T;
 };
 
 export const useIntegrationsStore = create<State>((set) => ({

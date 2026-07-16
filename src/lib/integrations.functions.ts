@@ -20,7 +20,7 @@ export interface DifyConfig {
   dataset_id?: string;
 }
 
-async function loadSetting<T extends Record<string, string>>(
+async function loadSetting<T>(
   supabase: import("@supabase/supabase-js").SupabaseClient,
   key: string,
 ): Promise<T> {
@@ -44,3 +44,4 @@ export const getDifyConfig = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     return loadSetting<DifyConfig>(context.supabase, "dify");
   });
+
