@@ -170,7 +170,7 @@ export async function sendMessage(
     }
     res = await fetch(api(`/conversations/${conversationId}/messages`), {
       method: "POST",
-      headers: { api_access_token: TOKEN! },
+      headers: { api_access_token: cfg().user_token! },
       body: fd,
     });
   } else {
@@ -198,7 +198,7 @@ export async function listAutomations(conversationId: string): Promise<Automatio
   return [];
 }
 
-export const chatwootInboxId = INBOX_ID;
+export const chatwootInboxId = () => cfg().inbox_id;
 
 /** Liga/desliga IA para uma conversa via custom_attributes. */
 export async function setAiHandling(conversationId: string, enabled: boolean): Promise<void> {
@@ -210,10 +210,9 @@ export async function setAiHandling(conversationId: string, enabled: boolean): P
   });
 }
 
-/** Configuração para o consumer realtime. */
-export const chatwootRealtimeConfig = {
-  baseUrl: BASE,
-  pubsubToken: import.meta.env.VITE_CHATWOOT_PUBSUB_TOKEN as string | undefined,
-  accountId: ACCOUNT_ID,
+/** Configuração para o consumer realtime (lida do store no momento do uso). */
+export const getChatwootRealtimeConfig = () => {
+  const c = cfg();
+  return { baseUrl: c.url, pubsubToken: c.pubsub_token, accountId: c.account_id };
 };
 
