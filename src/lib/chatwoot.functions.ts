@@ -3,11 +3,11 @@
  * servidor — o cliente chama estas fns via RPC autenticado.
  *
  * Fluxo:
- *   client -> useServerFn(chatwoot*) -> requireSupabaseAuth -> admin client
+ *   client -> useServerFn(chatwoot*) -> requireFreshSupabaseAuth -> admin client
  *   carrega app_settings('chatwoot') -> chamada HTTP ao Chatwoot.
  */
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireFreshSupabaseAuth } from "@/lib/safe-supabase-auth.middleware";
 import { z } from "zod";
 
 interface ChatwootServerConfig {
@@ -55,7 +55,7 @@ async function cwFetch(cfg: ChatwootServerConfig, path: string, init?: RequestIn
 // --- Server fns ------------------------------------------------------------
 
 export const chatwootListConversations = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFreshSupabaseAuth])
   .handler(async () => {
     const cfg = await loadCfg();
     return cwFetch(
@@ -65,7 +65,7 @@ export const chatwootListConversations = createServerFn({ method: "GET" })
   });
 
 export const chatwootGetConversation = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFreshSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string() }).parse(input))
   .handler(async ({ data }) => {
     const cfg = await loadCfg();
@@ -81,7 +81,7 @@ const attachmentSchema = z.object({
 });
 
 export const chatwootSendMessage = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFreshSupabaseAuth])
   .inputValidator((input: unknown) =>
     z.object({
       conversationId: z.string(),
@@ -115,7 +115,7 @@ export const chatwootSendMessage = createServerFn({ method: "POST" })
   });
 
 export const chatwootSetAiHandling = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFreshSupabaseAuth])
   .inputValidator((input: unknown) =>
     z.object({ conversationId: z.string(), enabled: z.boolean() }).parse(input),
   )
@@ -129,7 +129,7 @@ export const chatwootSetAiHandling = createServerFn({ method: "POST" })
   });
 
 export const chatwootAssignAgent = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFreshSupabaseAuth])
   .inputValidator((input: unknown) =>
     z.object({ conversationId: z.string(), agentId: z.string() }).parse(input),
   )
@@ -144,7 +144,7 @@ export const chatwootAssignAgent = createServerFn({ method: "POST" })
 
 /** Ping usado no formulário de integrações (admin) — não lê app_settings. */
 export const chatwootPing = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFreshSupabaseAuth])
   .inputValidator((input: unknown) =>
     z.object({
       url: z.string().min(1),

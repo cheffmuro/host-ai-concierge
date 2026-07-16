@@ -10,7 +10,7 @@
  * - GET /api/v2/accounts/{id}/reports?metric=conversations_count&type=account&since=&until=
  */
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireFreshSupabaseAuth } from "@/lib/safe-supabase-auth.middleware";
 
 export interface DashboardMetrics {
   configured: boolean;
@@ -50,7 +50,7 @@ async function jsonOrNull<T>(input: string, headers: HeadersInit): Promise<T | n
 }
 
 export const getDashboardMetrics = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFreshSupabaseAuth])
   .handler(async (): Promise<DashboardMetrics> => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data } = await supabaseAdmin

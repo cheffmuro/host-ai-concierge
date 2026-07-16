@@ -6,7 +6,7 @@
  * `dify.functions.ts`.
  */
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireFreshSupabaseAuth } from "@/lib/safe-supabase-auth.middleware";
 
 export interface ChatwootPublicConfig {
   url?: string;
@@ -35,7 +35,7 @@ async function loadRaw(key: string): Promise<Record<string, string>> {
 }
 
 export const getChatwootConfig = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFreshSupabaseAuth])
   .handler(async (): Promise<ChatwootPublicConfig> => {
     const v = await loadRaw("chatwoot");
     return {
@@ -48,7 +48,7 @@ export const getChatwootConfig = createServerFn({ method: "GET" })
   });
 
 export const getDifyConfig = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFreshSupabaseAuth])
   .handler(async (): Promise<DifyPublicConfig> => {
     const v = await loadRaw("dify");
     return {
