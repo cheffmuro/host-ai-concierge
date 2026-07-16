@@ -169,10 +169,32 @@ function IntegrationsPage() {
                 </div>
               ))}
             </div>
+            {pingStatus[key] && (
+              <div className={`flex items-start gap-2 rounded-md border p-3 text-xs ${
+                pingStatus[key]!.ok
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  : "border-rose-200 bg-rose-50 text-rose-800"
+              }`}>
+                {pingStatus[key]!.ok ? <CheckCircle2 className="mt-0.5 h-3.5 w-3.5" /> : <AlertCircle className="mt-0.5 h-3.5 w-3.5" />}
+                <span>{pingStatus[key]!.msg}</span>
+              </div>
+            )}
             {isAdmin && (
-              <Button onClick={() => save(key)} disabled={saving === key} className="rounded-sm">
-                {saving === key ? "Salvando…" : "Salvar"}
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => save(key)} disabled={saving === key || testing === key} className="rounded-sm">
+                  {saving === key ? <><Loader2 className="mr-1.5 h-3 w-3 animate-spin" />Salvando…</> : "Salvar"}
+                </Button>
+                {(key === "chatwoot" || key === "dify") && (
+                  <Button
+                    variant="outline"
+                    onClick={() => testConnection(key)}
+                    disabled={testing === key || saving === key}
+                    className="rounded-sm"
+                  >
+                    {testing === key ? <><Loader2 className="mr-1.5 h-3 w-3 animate-spin" />Testando…</> : "Testar conexão"}
+                  </Button>
+                )}
+              </div>
             )}
           </section>
         );
