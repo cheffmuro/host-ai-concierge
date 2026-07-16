@@ -6,7 +6,8 @@
  * definidos — preview Vercel em modo mock continua funcionando.
  */
 import { useEffect, useRef } from "react";
-import { chatwootRealtimeConfig, mapMessage, mapConversation } from "@/services/chatwootService";
+import { getChatwootRealtimeConfig, mapMessage, mapConversation } from "@/services/chatwootService";
+import { useIntegrationsStore } from "@/stores/integrationsStore";
 import type { Conversation, Message } from "@/services/types";
 
 interface Handlers {
@@ -18,8 +19,11 @@ export function useChatwootRealtime(handlers: Handlers) {
   const handlersRef = useRef(handlers);
   handlersRef.current = handlers;
 
+  // Re-run quando a config das integrações mudar (bootstrap chegando após login).
+  const version = useIntegrationsStore((s) => s.version);
+
   useEffect(() => {
-    const { baseUrl, pubsubToken } = chatwootRealtimeConfig;
+    const { baseUrl, pubsubToken } = getChatwootRealtimeConfig();
     if (!baseUrl || !pubsubToken) return;
 
     const wsUrl = baseUrl.replace(/^http/, "ws") + "/cable";
