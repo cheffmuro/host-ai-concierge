@@ -10,7 +10,9 @@
  * - GET /api/v2/accounts/{id}/reports?metric=conversations_count&type=account&since=&until=
  */
 import { createServerFn } from "@tanstack/react-start";
-import { requireFreshSupabaseAuth } from "@/lib/safe-supabase-auth.middleware";
+import { getRequest } from "@tanstack/react-start/server";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 export interface DashboardMetrics {
   configured: boolean;
@@ -54,26 +56,63 @@ async function jsonOrNull<T>(input: string, headers: HeadersInit): Promise<T | n
   }
 }
 
+async function hasValidCallerSession(): Promise<boolean> {
+  try {
+    const authHeader = getRequest()?.headers?.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) return false;
+
+    const token = authHeader.slice("Bearer ".length).trim();
+    if (!token) return false;
+
+    const SUPABASE_URL = process.env.SUPABASE_URL;
+    const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+    if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) return false;
+
+    const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const { data, error } = await supabase.auth.getClaims(token);
+    if (error || !data?.claims?.sub) {
+      console.error("getDashboardMetrics: sessão ausente ou expirada");
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("getDashboardMetrics: falha ao validar sessão", error);
+    return false;
+  }
+}
+
 export const getDashboardMetrics = createServerFn({ method: "GET" })
-  .middleware([requireFreshSupabaseAuth])
   .handler(async (): Promise<DashboardMetrics> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin
-      .from("app_settings")
-      .select("value")
-      .eq("key", "chatwoot")
-      .maybeSingle();
-
-    const cfg = (data?.value ?? {}) as {
-      url?: string; user_token?: string; account_id?: string;
-    };
-    if (!cfg.url || !cfg.user_token || !cfg.account_id) return EMPTY;
-
-    const base = cfg.url.replace(/\/+$/, "");
-    const acc = cfg.account_id;
-    const H: HeadersInit = { api_access_token: cfg.user_token, "Content-Type": "application/json" };
-
     try {
+      const isAuthenticated = await hasValidCallerSession();
+      if (!isAuthenticated) return { ...EMPTY, error: "Sessão expirada" };
+
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data, error } = await supabaseAdmin
+        .from("app_settings")
+        .select("value")
+        .eq("key", "chatwoot")
+        .maybeSingle();
+
+      if (error) {
+        console.error("getDashboardMetrics: falha ao ler configuração", error.message);
+        return { ...EMPTY, error: "Configuração indisponível" };
+      }
+
+      const cfg = (data?.value ?? {}) as {
+        url?: string; user_token?: string; account_id?: string;
+      };
+      if (!cfg.url || !cfg.user_token || !cfg.account_id) return EMPTY;
+
+      const base = cfg.url.replace(/\/+$/, "");
+      const acc = cfg.account_id;
+      const H: HeadersInit = { api_access_token: cfg.user_token, "Content-Type": "application/json" };
+
       // Janela: 7 dias
       const now = Math.floor(Date.now() / 1000);
       const sevenDays = 7 * 24 * 3600;
