@@ -41,26 +41,21 @@ export function useIntegrationsStatus(): IntegrationsStatus {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from("app_settings")
-        .select("key, value")
-        .in("key", Object.keys(required));
+      // Usa RPC (SECURITY DEFINER) que só devolve booleanos — não expõe tokens.
+      const { data, error } = await supabase.rpc("get_integrations_status");
       if (cancelled) return;
 
-      const map = new Map<string, Record<string, string>>();
-      data?.forEach((row: { key: string; value: unknown }) => {
-        map.set(row.key, (row.value as Record<string, string>) || {});
-      });
+      const map = new Map<string, boolean>();
+      if (!error && Array.isArray(data)) {
+        (data as Array<{ key: string; configured: boolean }>).forEach((row) => {
+          map.set(row.key, !!row.configured);
+        });
+      }
 
-      const check = (k: IntegrationKey) => {
-        const v = map.get(k) || {};
-        return required[k].every((f) => (v[f] ?? "").toString().trim().length > 0);
-      };
-
-      const chatwoot = check("chatwoot");
-      const evolution = check("evolution");
-      const dify = check("dify");
-      const n8n = check("n8n");
+      const chatwoot = map.get("chatwoot") ?? false;
+      const evolution = map.get("evolution") ?? false;
+      const dify = map.get("dify") ?? false;
+      const n8n = map.get("n8n") ?? false;
 
       const missing = (Object.keys(required) as IntegrationKey[]).filter((k) => {
         return !({ chatwoot, evolution, dify, n8n }[k]);
@@ -72,6 +67,7 @@ export function useIntegrationsStatus(): IntegrationsStatus {
       cancelled = true;
     };
   }, []);
+
 
   return state;
 }

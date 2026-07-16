@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { CheckCircle2, AlertCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { pingChatwoot } from "@/services/chatwootService";
+import { pingDify } from "@/services/difyService";
+import { useIntegrationsStore } from "@/stores/integrationsStore";
 
 export const Route = createFileRoute("/_authenticated/settings/integrations")({
   head: () => ({ meta: [{ title: "Integrações — Anfitrião" }] }),
@@ -73,13 +76,49 @@ function IntegrationsPage() {
   const update = (key: string, field: string, value: string) =>
     setData((d) => ({ ...d, [key]: { ...(d[key] || {}), [field]: value } }));
 
+  const [testing, setTesting] = useState<string | null>(null);
+  const [pingStatus, setPingStatus] = useState<Record<string, { ok: boolean; msg: string } | undefined>>({});
+
+  const runPing = async (key: IntegrationKey) => {
+    const v = data[key] || {};
+    if (key === "chatwoot") return pingChatwoot(v as { url?: string; user_token?: string; account_id?: string });
+    if (key === "dify") return pingDify(v as { url?: string; api_key?: string; dataset_id?: string });
+    return { ok: true } as const; // evolution/n8n não têm ping remoto trivial (segredos + rota interna)
+  };
+
+  const testConnection = async (key: IntegrationKey) => {
+    setTesting(key);
+    const result = await runPing(key);
+    setTesting(null);
+    if (result.ok) {
+      setPingStatus((s) => ({ ...s, [key]: { ok: true, msg: "Conectado com sucesso" } }));
+      toast.success(`${definitions[key].label} conectado`);
+    } else {
+      setPingStatus((s) => ({ ...s, [key]: { ok: false, msg: result.error } }));
+      toast.error(`Falha em ${definitions[key].label}`, { description: result.error });
+    }
+  };
+
   const save = async (key: IntegrationKey) => {
     setSaving(key);
+    // Ping antes de gravar para não persistir credencial quebrada.
+    const result = await runPing(key);
+    if (!result.ok) {
+      setSaving(null);
+      setPingStatus((s) => ({ ...s, [key]: { ok: false, msg: result.error } }));
+      toast.error(`Credenciais inválidas`, { description: result.error });
+      return;
+    }
     const { error } = await supabase.from("app_settings").upsert({ key, value: data[key] || {} });
     setSaving(null);
     if (error) { toast.error(error.message); return; }
-    toast.success(`${definitions[key].label} salvo`);
+    setPingStatus((s) => ({ ...s, [key]: { ok: true, msg: "Salvo e validado" } }));
+    toast.success(`${definitions[key].label} salvo e validado`);
+    // Atualiza store para inbox/dashboard reagirem sem reload.
+    if (key === "chatwoot") useIntegrationsStore.getState().setChatwoot(data[key] || {});
+    if (key === "dify") useIntegrationsStore.getState().setDify(data[key] || {});
   };
+
 
   const isConfigured = (key: IntegrationKey) => {
     const v = data[key];
@@ -130,10 +169,32 @@ function IntegrationsPage() {
                 </div>
               ))}
             </div>
+            {pingStatus[key] && (
+              <div className={`flex items-start gap-2 rounded-md border p-3 text-xs ${
+                pingStatus[key]!.ok
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  : "border-rose-200 bg-rose-50 text-rose-800"
+              }`}>
+                {pingStatus[key]!.ok ? <CheckCircle2 className="mt-0.5 h-3.5 w-3.5" /> : <AlertCircle className="mt-0.5 h-3.5 w-3.5" />}
+                <span>{pingStatus[key]!.msg}</span>
+              </div>
+            )}
             {isAdmin && (
-              <Button onClick={() => save(key)} disabled={saving === key} className="rounded-sm">
-                {saving === key ? "Salvando…" : "Salvar"}
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => save(key)} disabled={saving === key || testing === key} className="rounded-sm">
+                  {saving === key ? <><Loader2 className="mr-1.5 h-3 w-3 animate-spin" />Salvando…</> : "Salvar"}
+                </Button>
+                {(key === "chatwoot" || key === "dify") && (
+                  <Button
+                    variant="outline"
+                    onClick={() => testConnection(key)}
+                    disabled={testing === key || saving === key}
+                    className="rounded-sm"
+                  >
+                    {testing === key ? <><Loader2 className="mr-1.5 h-3 w-3 animate-spin" />Testando…</> : "Testar conexão"}
+                  </Button>
+                )}
+              </div>
             )}
           </section>
         );

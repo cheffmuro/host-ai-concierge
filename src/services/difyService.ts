@@ -146,3 +146,26 @@ export async function askDify(
     }),
   });
 }
+
+/**
+ * Testa credenciais Dify: lista datasets para validar api_key + dataset_id.
+ */
+export async function pingDify(input: {
+  url?: string; api_key?: string; dataset_id?: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { url, api_key, dataset_id } = input;
+  if (!url || !api_key || !dataset_id) return { ok: false, error: "URL, API Key e Dataset ID são obrigatórios." };
+  const base = url.replace(/\/+$/, "");
+  try {
+    const res = await fetch(`${base}/v1/datasets/${dataset_id}/documents?page=1&limit=1`, {
+      headers: { Authorization: `Bearer ${api_key}` },
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      return { ok: false, error: `Dify respondeu ${res.status}: ${body.slice(0, 120) || "sem corpo"}` };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "falha de rede" };
+  }
+}

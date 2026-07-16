@@ -20,11 +20,13 @@ export interface DifyConfig {
   dataset_id?: string;
 }
 
-async function loadSetting<T>(
-  supabase: import("@supabase/supabase-js").SupabaseClient,
-  key: string,
-): Promise<T> {
-  const { data, error } = await supabase
+async function loadSetting<T>(key: string): Promise<T> {
+  // Usa admin client após verificação de auth (feita pelo middleware).
+  // A tabela `app_settings` tem SELECT restrito a admin por RLS; os operadores
+  // não-admin ainda precisam operar o Chatwoot/Dify (enviar mensagens etc.),
+  // por isso lemos via service role aqui, depois do middleware validar o token.
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
     .from("app_settings")
     .select("value")
     .eq("key", key)
@@ -35,13 +37,13 @@ async function loadSetting<T>(
 
 export const getChatwootConfig = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    return loadSetting<ChatwootConfig>(context.supabase, "chatwoot");
+  .handler(async () => {
+    return loadSetting<ChatwootConfig>("chatwoot");
   });
 
 export const getDifyConfig = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    return loadSetting<DifyConfig>(context.supabase, "dify");
+  .handler(async () => {
+    return loadSetting<DifyConfig>("dify");
   });
 

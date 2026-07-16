@@ -216,3 +216,27 @@ export const getChatwootRealtimeConfig = () => {
   return { baseUrl: c.url, pubsubToken: c.pubsub_token, accountId: c.account_id };
 };
 
+
+/**
+ * Testa credenciais Chatwoot sem depender do store: bate em /api/v1/accounts/{id}
+ * e retorna ok/erro legível. Usado no formulário de integrações antes de salvar.
+ */
+export async function pingChatwoot(input: {
+  url?: string; user_token?: string; account_id?: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { url, user_token, account_id } = input;
+  if (!url || !user_token || !account_id) return { ok: false, error: "URL, User Token e Account ID são obrigatórios." };
+  const base = url.replace(/\/+$/, "");
+  try {
+    const res = await fetch(`${base}/api/v1/accounts/${account_id}`, {
+      headers: { api_access_token: user_token, "Content-Type": "application/json" },
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      return { ok: false, error: `Chatwoot respondeu ${res.status}: ${body.slice(0, 120) || "sem corpo"}` };
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "falha de rede" };
+  }
+}
