@@ -97,14 +97,14 @@ export const Route = createFileRoute("/api/public/customer-context")({
           ltv: p.ltv ?? 0,
           average_ticket: p.average_ticket ?? 0,
           total_orders: p.total_orders ?? 0,
-          last_purchases: p.last_purchases ?? [],
+          last_purchases: (p.last_purchases ?? []) as never,
           tags: p.tags ?? [],
           notes: p.notes ?? null,
-          payload: p.payload ?? {},
+          payload: (p.payload ?? {}) as never,
         };
         const { error } = await supabaseAdmin
           .from("customer_context")
-          .upsert(row, { onConflict: "identifier" });
+          .upsert(row as never, { onConflict: "identifier" });
         if (error) {
           return new Response(JSON.stringify({ error: error.message }), { status: 500 });
         }

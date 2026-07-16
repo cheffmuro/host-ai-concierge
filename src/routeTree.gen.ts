@@ -20,6 +20,7 @@ import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedChannelsRouteImport } from './routes/_authenticated/channels'
 import { Route as AuthenticatedBrainRouteImport } from './routes/_authenticated/brain'
+import { Route as ApiPublicCustomerContextRouteImport } from './routes/api/public/customer-context'
 import { Route as AuthenticatedSettingsIntegrationsRouteImport } from './routes/_authenticated/settings.integrations'
 import { Route as AuthenticatedSettingsGuideRouteImport } from './routes/_authenticated/settings.guide'
 
@@ -77,6 +78,12 @@ const AuthenticatedBrainRoute = AuthenticatedBrainRouteImport.update({
   path: '/brain',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const ApiPublicCustomerContextRoute =
+  ApiPublicCustomerContextRouteImport.update({
+    id: '/api/public/customer-context',
+    path: '/api/public/customer-context',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedSettingsIntegrationsRoute =
   AuthenticatedSettingsIntegrationsRouteImport.update({
     id: '/settings/integrations',
@@ -103,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/workflows': typeof AuthenticatedWorkflowsRoute
   '/settings/guide': typeof AuthenticatedSettingsGuideRoute
   '/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
+  '/api/public/customer-context': typeof ApiPublicCustomerContextRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -117,6 +125,7 @@ export interface FileRoutesByTo {
   '/workflows': typeof AuthenticatedWorkflowsRoute
   '/settings/guide': typeof AuthenticatedSettingsGuideRoute
   '/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
+  '/api/public/customer-context': typeof ApiPublicCustomerContextRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -133,6 +142,7 @@ export interface FileRoutesById {
   '/_authenticated/workflows': typeof AuthenticatedWorkflowsRoute
   '/_authenticated/settings/guide': typeof AuthenticatedSettingsGuideRoute
   '/_authenticated/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
+  '/api/public/customer-context': typeof ApiPublicCustomerContextRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/workflows'
     | '/settings/guide'
     | '/settings/integrations'
+    | '/api/public/customer-context'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/workflows'
     | '/settings/guide'
     | '/settings/integrations'
+    | '/api/public/customer-context'
   id:
     | '__root__'
     | '/'
@@ -178,6 +190,7 @@ export interface FileRouteTypes {
     | '/_authenticated/workflows'
     | '/_authenticated/settings/guide'
     | '/_authenticated/settings/integrations'
+    | '/api/public/customer-context'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -186,6 +199,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  ApiPublicCustomerContextRoute: typeof ApiPublicCustomerContextRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -267,6 +281,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBrainRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/public/customer-context': {
+      id: '/api/public/customer-context'
+      path: '/api/public/customer-context'
+      fullPath: '/api/public/customer-context'
+      preLoaderRoute: typeof ApiPublicCustomerContextRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/settings/integrations': {
       id: '/_authenticated/settings/integrations'
       path: '/settings/integrations'
@@ -317,6 +338,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  ApiPublicCustomerContextRoute: ApiPublicCustomerContextRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
