@@ -6,7 +6,7 @@
  * `dify.functions.ts`.
  */
 import { createServerFn } from "@tanstack/react-start";
-import { requireFreshSupabaseAuth } from "@/lib/safe-supabase-auth.middleware";
+import { getRequest } from "@tanstack/react-start/server";
 
 export interface ChatwootPublicConfig {
   url?: string;
@@ -26,34 +26,83 @@ export interface DifyPublicConfig {
 export type ChatwootConfig = ChatwootPublicConfig;
 export type DifyConfig = DifyPublicConfig;
 
-async function loadRaw(key: string): Promise<Record<string, string>> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin
-    .from("app_settings").select("value").eq("key", key).maybeSingle();
-  if (error) throw new Error(error.message);
-  return (data?.value ?? {}) as Record<string, string>;
+function decodeJwtPayload(token: string): { sub?: string; exp?: number } | null {
+  try {
+    const part = token.split(".")[1];
+    if (!part) return null;
+    const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+    const pad = b64.length % 4 ? "=".repeat(4 - (b64.length % 4)) : "";
+    const json = atob(b64 + pad);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+async function hasValidCallerSession(): Promise<boolean> {
+  try {
+    const req = getRequest();
+    const auth = req.headers.get("authorization") ?? req.headers.get("Authorization");
+    if (!auth?.toLowerCase().startsWith("bearer ")) return false;
+    const token = auth.slice(7).trim();
+    const payload = decodeJwtPayload(token);
+    if (!payload?.sub) return false;
+    if (payload.exp && payload.exp * 1000 < Date.now()) return false;
+    return true;
+  } catch (e) {
+    console.error("[integrations] session check failed:", e);
+    return false;
+  }
+}
+
+async function loadRaw(key: string): Promise<Record<string, string> | null> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("app_settings").select("value").eq("key", key).maybeSingle();
+    if (error) {
+      console.error(`[integrations] loadRaw(${key}) error:`, error.message);
+      return null;
+    }
+    return (data?.value ?? {}) as Record<string, string>;
+  } catch (e) {
+    console.error(`[integrations] loadRaw(${key}) threw:`, e);
+    return null;
+  }
 }
 
 export const getChatwootConfig = createServerFn({ method: "GET" })
-  .middleware([requireFreshSupabaseAuth])
-  .handler(async (): Promise<ChatwootPublicConfig> => {
-    const v = await loadRaw("chatwoot");
-    return {
-      url: v.url,
-      account_id: v.account_id,
-      inbox_id: v.inbox_id,
-      pubsub_token: v.pubsub_token,
-      configured: Boolean(v.url && v.user_token && v.account_id),
-    };
+  .handler(async (): Promise<ChatwootPublicConfig | null> => {
+    try {
+      if (!(await hasValidCallerSession())) return null;
+      const v = await loadRaw("chatwoot");
+      if (!v) return null;
+      return {
+        url: v.url,
+        account_id: v.account_id,
+        inbox_id: v.inbox_id,
+        pubsub_token: v.pubsub_token,
+        configured: Boolean(v.url && v.user_token && v.account_id),
+      };
+    } catch (e) {
+      console.error("[integrations] getChatwootConfig failed:", e);
+      return null;
+    }
   });
 
 export const getDifyConfig = createServerFn({ method: "GET" })
-  .middleware([requireFreshSupabaseAuth])
-  .handler(async (): Promise<DifyPublicConfig> => {
-    const v = await loadRaw("dify");
-    return {
-      url: v.url,
-      dataset_id: v.dataset_id,
-      configured: Boolean(v.url && v.api_key && v.dataset_id),
-    };
+  .handler(async (): Promise<DifyPublicConfig | null> => {
+    try {
+      if (!(await hasValidCallerSession())) return null;
+      const v = await loadRaw("dify");
+      if (!v) return null;
+      return {
+        url: v.url,
+        dataset_id: v.dataset_id,
+        configured: Boolean(v.url && v.api_key && v.dataset_id),
+      };
+    } catch (e) {
+      console.error("[integrations] getDifyConfig failed:", e);
+      return null;
+    }
   });
