@@ -8,7 +8,7 @@ import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useIntegrationsStore } from "@/stores/integrationsStore";
 import { useIsAdmin } from "@/hooks/useRole";
 
-const ALLOW = ["/settings/integrations", "/settings/guide", "/profile"];
+const ALLOW = ["/settings/integrations", "/settings/guide", "/settings/users", "/profile"];
 
 export function useOnboardingGuard() {
   const navigate = useNavigate();
