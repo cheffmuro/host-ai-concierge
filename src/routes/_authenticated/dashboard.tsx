@@ -6,7 +6,7 @@ import { USE_MOCKS } from "@/lib/mocks";
 import { Badge } from "@/components/ui/badge";
 import { ChannelIcon, channelLabel } from "@/components/channel-icon";
 import { IntegrationsBanner } from "@/components/integrations-banner";
-import { ArrowDownRight, ArrowUpRight, Loader2 } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
 
 
@@ -69,7 +69,7 @@ function DashboardPage() {
         <Metric label="Resolução pela IA" value={empty ? "—" : `${Math.round(m.resolutionRate * 100)}%`} delta={loading ? "…" : "7 dias"} positive />
         <Metric label="Tempo Médio" value={m.avgHandleTime} delta={loading ? "…" : "resolução"} positive />
         <Metric label="Transbordos Humanos" value={String(m.humanHandoffs)} delta={loading ? "…" : "7 dias"} />
-        <Metric label="Conversas Ativas" value={String(m.activeConversations)} delta={loading ? <Loader2 className="h-3 w-3 animate-spin" /> as unknown as string : "abertas"} />
+        <Metric label="Conversas Ativas" value={String(m.activeConversations)} delta={loading ? "…" : "abertas"} />
       </div>
 
 
