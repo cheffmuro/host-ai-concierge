@@ -17,7 +17,9 @@ import type { Database } from "@/integrations/supabase/types";
 export interface DashboardMetrics {
   configured: boolean;
   resolutionRate: number;          // 0..1
+  iaResolution?: number;           // compat fallback solicitado pela UI
   avgHandleTime: string;           // ex "2m 14s"
+  avgTime?: number;                 // seconds, compat fallback solicitado pela UI
   humanHandoffs: number;
   activeConversations: number;
   weeklyVolume: Array<{ day: string; automated: number; human: number }>;
@@ -27,11 +29,17 @@ export interface DashboardMetrics {
 const EMPTY: DashboardMetrics = {
   configured: false,
   resolutionRate: 0,
+  iaResolution: 0,
   avgHandleTime: "—",
+  avgTime: 0,
   humanHandoffs: 0,
   activeConversations: 0,
   weeklyVolume: [],
 };
+
+function fallback(error?: string): DashboardMetrics {
+  return error ? { ...EMPTY, error } : { ...EMPTY };
+}
 
 function fmtDuration(seconds: number): string {
   if (!seconds || !isFinite(seconds)) return "—";
@@ -56,6 +64,18 @@ async function jsonOrNull<T>(input: string, headers: HeadersInit): Promise<T | n
   }
 }
 
+function decodeJwtPayload(token: string): { sub?: string; exp?: number } | null {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const decoded = atob(normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "="));
+    return JSON.parse(decoded) as { sub?: string; exp?: number };
+  } catch {
+    return null;
+  }
+}
+
 async function hasValidCallerSession(): Promise<boolean> {
   try {
     const authHeader = getRequest()?.headers?.get("authorization");
@@ -63,6 +83,12 @@ async function hasValidCallerSession(): Promise<boolean> {
 
     const token = authHeader.slice("Bearer ".length).trim();
     if (!token) return false;
+
+    const payload = decodeJwtPayload(token);
+    if (!payload?.sub || !payload.exp || payload.exp <= Math.floor(Date.now() / 1000)) {
+      console.error("getDashboardMetrics: sessão ausente ou expirada");
+      return false;
+    }
 
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
@@ -73,9 +99,14 @@ async function hasValidCallerSession(): Promise<boolean> {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const { data, error } = await supabase.auth.getClaims(token);
-    if (error || !data?.claims?.sub) {
-      console.error("getDashboardMetrics: sessão ausente ou expirada");
+    const { error } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", payload.sub)
+      .maybeSingle();
+
+    if (error) {
+      console.error("getDashboardMetrics: sessão inválida", error.message);
       return false;
     }
 
@@ -90,7 +121,7 @@ export const getDashboardMetrics = createServerFn({ method: "GET" })
   .handler(async (): Promise<DashboardMetrics> => {
     try {
       const isAuthenticated = await hasValidCallerSession();
-      if (!isAuthenticated) return { ...EMPTY, error: "Sessão expirada" };
+      if (!isAuthenticated) return fallback("Sessão expirada");
 
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data, error } = await supabaseAdmin
@@ -101,13 +132,13 @@ export const getDashboardMetrics = createServerFn({ method: "GET" })
 
       if (error) {
         console.error("getDashboardMetrics: falha ao ler configuração", error.message);
-        return { ...EMPTY, error: "Configuração indisponível" };
+        return fallback("Configuração indisponível");
       }
 
       const cfg = (data?.value ?? {}) as {
         url?: string; user_token?: string; account_id?: string;
       };
-      if (!cfg.url || !cfg.user_token || !cfg.account_id) return EMPTY;
+      if (!cfg.url || !cfg.user_token || !cfg.account_id) return fallback();
 
       const base = cfg.url.replace(/\/+$/, "");
       const acc = cfg.account_id;
@@ -174,16 +205,15 @@ export const getDashboardMetrics = createServerFn({ method: "GET" })
       return {
         configured: true,
         resolutionRate,
+        iaResolution: resolutionRate,
         avgHandleTime: fmtDuration(summary?.avg_resolution_time ?? 0),
+        avgTime: summary?.avg_resolution_time ?? 0,
         humanHandoffs: Math.max(0, convsCount - resolutions),
         activeConversations: open?.meta?.all_count ?? 0,
         weeklyVolume,
       };
     } catch (error) {
       console.error("getDashboardMetrics: falha ao buscar métricas do Chatwoot", error);
-      return {
-        ...EMPTY,
-        error: error instanceof Error ? error.message : "Chatwoot indisponível",
-      };
+      return fallback(error instanceof Error ? error.message : "Chatwoot indisponível");
     }
   });
