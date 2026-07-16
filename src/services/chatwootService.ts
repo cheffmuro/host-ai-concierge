@@ -62,7 +62,7 @@ interface CwConversation {
   status: string;
   unread_count: number;
   last_activity_at: number;
-  meta: { sender: { name: string; identifier?: string } };
+  meta: { sender: { name: string; identifier?: string; email?: string; phone_number?: string } };
   labels?: string[];
   custom_attributes?: Record<string, unknown>;
   messages?: CwMessage[];
