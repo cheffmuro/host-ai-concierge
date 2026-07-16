@@ -18,6 +18,7 @@ const titles: Record<string, string> = {
   "/workflows": "Automações",
   "/settings/integrations": "Integrações",
   "/settings/guide": "Manual de Integrações",
+  "/settings/users": "Usuários",
   "/profile": "Perfil",
 };
 
