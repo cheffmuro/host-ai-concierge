@@ -1,11 +1,23 @@
-// Project-specific bearer attacher. Refreshes the Supabase session when the
-// cached access token is expired (or near expiry) before attaching it. If the
-// refresh token itself is invalid/expired, signs the user out and redirects
-// to /auth so the next request can obtain a fresh session.
+// Project-specific bearer attacher. Always validates the JWT exp claim from
+// the token itself (not just session.expires_at) and refreshes when expired
+// or near expiry. If refresh fails, signs the user out and redirects to
+// /login so the next request can obtain a fresh session.
 import { createMiddleware } from '@tanstack/react-start'
 import { supabase } from './client'
 
-const SKEW_SECONDS = 30
+const SKEW_SECONDS = 60
+
+function getJwtExp(token: string): number | null {
+  try {
+    const payload = token.split('.')[1]
+    if (!payload) return null
+    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+    const parsed = JSON.parse(json) as { exp?: number }
+    return typeof parsed.exp === 'number' ? parsed.exp : null
+  } catch {
+    return null
+  }
+}
 
 export const attachSupabaseAuth = createMiddleware({ type: 'function' }).client(
   async ({ next }) => {
@@ -14,16 +26,24 @@ export const attachSupabaseAuth = createMiddleware({ type: 'function' }).client(
       const { data } = await supabase.auth.getSession()
       let session = data.session
       const nowSec = Math.floor(Date.now() / 1000)
-      if (session && (session.expires_at ?? 0) - SKEW_SECONDS <= nowSec) {
-        const { data: refreshed, error } = await supabase.auth.refreshSession()
-        if (error || !refreshed.session) {
-          await supabase.auth.signOut().catch(() => {})
-          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-            window.location.replace('/login')
+      const exp = session?.access_token ? getJwtExp(session.access_token) : null
+      const expiresAt = exp ?? session?.expires_at ?? 0
+      const needsRefresh = !!session && expiresAt - SKEW_SECONDS <= nowSec
+
+      if (needsRefresh) {
+        try {
+          const { data: refreshed, error } = await supabase.auth.refreshSession()
+          if (error || !refreshed.session) {
+            await supabase.auth.signOut().catch(() => {})
+            if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+              window.location.replace('/login')
+            }
+            session = null
+          } else {
+            session = refreshed.session
           }
+        } catch {
           session = null
-        } else {
-          session = refreshed.session
         }
       }
       token = session?.access_token
