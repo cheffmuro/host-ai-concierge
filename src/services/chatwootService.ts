@@ -1,12 +1,14 @@
 /**
  * Chatwoot service — chama a API real do Chatwoot quando configurada.
- * Se VITE_CHATWOOT_URL/USER_TOKEN/ACCOUNT_ID estiverem ausentes, cai em mock
- * (útil para preview na Vercel antes do back-end estar no ar).
+ * As credenciais vêm do store `useIntegrationsStore`, populado pelo
+ * bootstrap (server fn `getChatwootConfig`) a partir de `app_settings`.
+ * Se a config estiver ausente, cai em vazio (ou mock com VITE_USE_MOCKS).
  *
  * Docs: https://www.chatwoot.com/developers/api/
  */
 import { mockConversations } from "@/mocks/data";
 import { USE_MOCKS } from "@/lib/mocks";
+import { isChatwootLive, useIntegrationsStore } from "@/stores/integrationsStore";
 import type {
   Attachment,
   AutomationEvent,
@@ -16,18 +18,14 @@ import type {
   Sentiment,
 } from "@/services/types";
 
-const BASE = import.meta.env.VITE_CHATWOOT_URL as string | undefined;
-const TOKEN = import.meta.env.VITE_CHATWOOT_USER_TOKEN as string | undefined;
-const ACCOUNT_ID = import.meta.env.VITE_CHATWOOT_ACCOUNT_ID as string | undefined;
-const INBOX_ID = import.meta.env.VITE_CHATWOOT_INBOX_ID as string | undefined;
-
-const isLive = Boolean(BASE && TOKEN && ACCOUNT_ID);
-const useMockFallback = () => !isLive && USE_MOCKS;
+const cfg = () => useIntegrationsStore.getState().chatwoot;
+const isLive = () => isChatwootLive(cfg());
+const useMockFallback = () => !isLive() && USE_MOCKS;
 const delay = (ms = 200) => new Promise((r) => setTimeout(r, ms));
 
-const api = (path: string) => `${BASE}/api/v1/accounts/${ACCOUNT_ID}${path}`;
+const api = (path: string) => `${cfg().url}/api/v1/accounts/${cfg().account_id}${path}`;
 const headers = (extra: Record<string, string> = {}): HeadersInit => ({
-  api_access_token: TOKEN!,
+  api_access_token: cfg().user_token!,
   "Content-Type": "application/json",
   ...extra,
 });
@@ -40,6 +38,7 @@ async function http<T>(input: string, init?: RequestInit): Promise<T> {
   }
   return res.json() as Promise<T>;
 }
+
 
 // --- Mappers ----------------------------------------------------------------
 
