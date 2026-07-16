@@ -94,10 +94,13 @@ export function mapMessage(m: CwMessage): Message {
 
 export function mapConversation(c: CwConversation): Conversation {
   const name = c.meta?.sender?.name || "Cliente";
+  const identifier =
+    c.meta?.sender?.email || c.meta?.sender?.phone_number || c.meta?.sender?.identifier;
   return {
     id: String(c.id),
     customerName: name,
     customerInitials: initials(name),
+    customerIdentifier: identifier,
     channel: mapChannel(c.channel),
     sentiment: mapSentiment(c.labels),
     preview: c.messages?.[c.messages.length - 1]?.content ?? "",
