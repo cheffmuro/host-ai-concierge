@@ -3,6 +3,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { useIntegrationsBootstrap } from "@/hooks/useIntegrationsBootstrap";
+import { useOnboardingGuard } from "@/hooks/useOnboardingGuard";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
