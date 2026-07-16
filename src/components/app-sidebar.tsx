@@ -13,6 +13,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdmin } from "@/hooks/useRole";
 
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
