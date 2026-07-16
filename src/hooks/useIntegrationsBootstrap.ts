@@ -8,12 +8,13 @@ import { useIntegrationsStore } from "@/stores/integrationsStore";
  * publica no store para que os services (chatwoot/dify) as consumam.
  * Roda uma vez por sessão autenticada.
  */
-export function useIntegrationsBootstrap() {
+export function useIntegrationsBootstrap(enabled = true) {
   const fetchChatwoot = useServerFn(getChatwootConfig);
   const fetchDify = useServerFn(getDifyConfig);
   const loaded = useIntegrationsStore((s) => s.loaded);
 
   useEffect(() => {
+    if (!enabled) return;
     if (loaded) return;
     let cancelled = false;
     (async () => {
@@ -27,5 +28,5 @@ export function useIntegrationsBootstrap() {
     return () => {
       cancelled = true;
     };
-  }, [loaded, fetchChatwoot, fetchDify]);
+  }, [enabled, loaded, fetchChatwoot, fetchDify]);
 }

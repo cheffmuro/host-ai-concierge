@@ -4,14 +4,14 @@
  * (Mercado Livre, site próprio, loja/ERP) em `/api/public/customer-context`.
  */
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireFreshSupabaseAuth } from "@/lib/safe-supabase-auth.middleware";
 import { z } from "zod";
 import type { CustomerContext, CustomerPurchase } from "@/services/types";
 
 const normalize = (s: string) => s.trim().toLowerCase().replace(/[^\w@+.-]/g, "");
 
 export const getCustomerContext = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFreshSupabaseAuth])
   .inputValidator((input: unknown) =>
     z.object({ identifier: z.string().min(3) }).parse(input),
   )

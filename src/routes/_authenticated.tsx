@@ -1,19 +1,12 @@
-import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { useIntegrationsBootstrap } from "@/hooks/useIntegrationsBootstrap";
 import { useOnboardingGuard } from "@/hooks/useOnboardingGuard";
-import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
-  beforeLoad: async ({ location }) => {
-    if (typeof window === "undefined") return;
-    const { data } = await supabase.auth.getSession();
-    if (!data.session) {
-      throw redirect({ to: "/login", search: { redirect: location.href } });
-    }
-  },
   component: AuthenticatedLayout,
 });
 
@@ -29,16 +22,25 @@ const titles: Record<string, string> = {
 };
 
 function AuthenticatedLayout() {
-  const { loading, user } = useAuth();
+  const { loading, user, session } = useAuth();
+  const navigate = useNavigate();
   const path = useRouterState({ select: (r) => r.location.pathname });
   const title = titles[path] ?? "Anfitrião";
-  useIntegrationsBootstrap();
+  useIntegrationsBootstrap(Boolean(session));
   useOnboardingGuard();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate({ to: "/login", search: { redirect: path }, replace: true });
+    }
+  }, [loading, user, navigate, path]);
 
   if (loading) {
     return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">Carregando…</div>;
   }
-  if (!user) return null;
+  if (!user) {
+    return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">Redirecionando…</div>;
+  }
 
   return (
     <SidebarProvider>

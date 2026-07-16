@@ -2,7 +2,7 @@
  * Server functions para o Dify (RAG). Mantém `api_key` no servidor.
  */
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireFreshSupabaseAuth } from "@/lib/safe-supabase-auth.middleware";
 import { z } from "zod";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -40,14 +40,14 @@ async function dfFetch(cfg: DifyServerConfig, path: string, init?: RequestInit):
 }
 
 export const difyListDocuments = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFreshSupabaseAuth])
   .handler(async () => {
     const cfg = await loadCfg();
     return dfFetch(cfg, `/v1/datasets/${cfg.dataset_id}/documents?page=1&limit=50`);
   });
 
 export const difyUploadDocument = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFreshSupabaseAuth])
   .inputValidator((input: unknown) =>
     z.object({ name: z.string(), mime: z.string().optional(), contentBase64: z.string() }).parse(input),
   )
@@ -70,7 +70,7 @@ export const difyUploadDocument = createServerFn({ method: "POST" })
   });
 
 export const difyRemoveDocument = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFreshSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string() }).parse(input))
   .handler(async ({ data }) => {
     const cfg = await loadCfg();
@@ -83,7 +83,7 @@ export const difyRemoveDocument = createServerFn({ method: "POST" })
   });
 
 export const difyAsk = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFreshSupabaseAuth])
   .inputValidator((input: unknown) =>
     z.object({
       query: z.string(),
@@ -107,7 +107,7 @@ export const difyAsk = createServerFn({ method: "POST" })
   });
 
 export const difyPing = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
+  .middleware([requireFreshSupabaseAuth])
   .inputValidator((input: unknown) =>
     z.object({
       url: z.string().min(1),

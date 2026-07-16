@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { getFreshSession } from "@/lib/auth-session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,14 +20,15 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const navigate = useNavigate();
   const search = Route.useSearch();
-  const target = search.redirect || "/dashboard";
+  const storedTarget = typeof window !== "undefined" ? sessionStorage.getItem("post-auth-redirect") : null;
+  const target = search.redirect?.startsWith("/login") ? (storedTarget || "/dashboard") : (search.redirect || storedTarget || "/dashboard");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: target });
+    getFreshSession().then((session) => {
+      if (session) navigate({ to: target });
     });
   }, [navigate, target]);
 
@@ -36,6 +38,7 @@ function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) { toast.error(error.message); return; }
+    sessionStorage.removeItem("post-auth-redirect");
     toast.success("Bem-vindo!");
     navigate({ to: target });
   };
@@ -44,6 +47,7 @@ function LoginPage() {
     const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + target });
     if (result.error) { toast.error(result.error.message || "Falha no login Google"); return; }
     if (result.redirected) return;
+    sessionStorage.removeItem("post-auth-redirect");
     navigate({ to: target });
   };
 
