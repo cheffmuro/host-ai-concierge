@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot, Search, Send, Paperclip, Sparkles, ArrowLeft, Info, Loader2,
   Check, CloudOff, AlertCircle, X, FileText, ImageIcon, RotateCw,
-  CornerDownRight, Truck,
+  CornerDownRight, Truck, Clock, AlertTriangle, PackageCheck, PackageX, RefreshCcw, Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow, format } from "date-fns";
