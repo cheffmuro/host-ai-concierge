@@ -62,13 +62,58 @@ const uid = () =>
 function InboxPage() {
   const { selectedId, setSelected, search, setSearch, channelFilter, setChannelFilter, contextOpen, setContextOpen } = useInboxStore();
   const [conversations, setConversations] = useState<Conversation[]>(USE_MOCKS ? mockConversations : []);
+  const [loadingConversations, setLoadingConversations] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const selected = conversations.find((c) => c.id === selectedId) ?? null;
+
+  // Versão do store cresce quando as credenciais são hidratadas via bootstrap.
+  const integrationsVersion = useIntegrationsStore((s) => s.version);
+  const integrationsLoaded = useIntegrationsStore((s) => s.loaded);
+
+  // Carrega histórico do Chatwoot no mount + quando credenciais chegarem
+  // + polling suave para cobrir gaps do websocket.
+  useEffect(() => {
+    if (USE_MOCKS) return;
+    const cfg = useIntegrationsStore.getState().chatwoot;
+    if (!isChatwootLive(cfg)) return;
+    let cancelled = false;
+
+    const fetchOnce = async () => {
+      try {
+        setLoadingConversations(true);
+        const list = await listConversations();
+        if (cancelled) return;
+        setConversations((prev) => {
+          // Preserva mensagens locais em conversas que já tinham state (ex.: mensagens otimistas).
+          const map = new Map(prev.map((c) => [c.id, c]));
+          return list.map((c) => {
+            const existing = map.get(c.id);
+            if (!existing) return c;
+            // Mantém mensagens locais se o fetch veio sem messages populadas
+            return { ...c, messages: c.messages.length ? c.messages : existing.messages };
+          });
+        });
+        setLoadError(null);
+      } catch (err) {
+        if (cancelled) return;
+        setLoadError(err instanceof Error ? err.message : "erro");
+      } finally {
+        if (!cancelled) setLoadingConversations(false);
+      }
+    };
+
+    fetchOnce();
+    // Fallback polling a cada 60s (o realtime cuida do resto).
+    const timer = setInterval(fetchOnce, 60_000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [integrationsVersion, integrationsLoaded]);
 
   useEffect(() => {
     if (!selectedId && conversations.length > 0 && typeof window !== "undefined" && window.innerWidth >= 1024) {
       setSelected(conversations[0].id);
     }
   }, [selectedId, conversations, setSelected]);
+
 
   // Auto-flush outbox when network returns
   useOutboxFlusher({
