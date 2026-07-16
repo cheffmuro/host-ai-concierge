@@ -65,7 +65,12 @@ function InboxPage() {
   const [conversations, setConversations] = useState<Conversation[]>(USE_MOCKS ? mockConversations : []);
   const [loadingConversations, setLoadingConversations] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const selected = conversations.find((c) => c.id === selectedId) ?? null;
+  const rawSelected = conversations.find((c) => c.id === selectedId) ?? null;
+  // Enriquecimento com customer_context (Mercado Livre / site / loja).
+  const { data: extCtx } = useCustomerContext(rawSelected?.customerIdentifier);
+  const selected = rawSelected && extCtx
+    ? { ...rawSelected, context: { ...rawSelected.context, ...extCtx, automations: rawSelected.context.automations } }
+    : rawSelected;
 
   // Versão do store cresce quando as credenciais são hidratadas via bootstrap.
   const integrationsVersion = useIntegrationsStore((s) => s.version);
