@@ -206,6 +206,7 @@ function IntegrationsPage() {
                     placeholder={f.placeholder}
                     value={data[key]?.[f.name] || ""}
                     onChange={(e) => update(key, f.name, e.target.value)}
+                    disabled={!isAdmin}
                   />
                 </div>
               ))}
@@ -221,9 +222,11 @@ function IntegrationsPage() {
               </div>
             )}
             <div className="flex gap-2">
-              <Button onClick={() => save(key)} disabled={saving === key || testing === key} className="rounded-sm">
-                {saving === key ? <><Loader2 className="mr-1.5 h-3 w-3 animate-spin" />Salvando…</> : "Salvar"}
-              </Button>
+              {isAdmin && (
+                <Button onClick={() => save(key)} disabled={saving === key || testing === key} className="rounded-sm">
+                  {saving === key ? <><Loader2 className="mr-1.5 h-3 w-3 animate-spin" />Salvando…</> : "Salvar"}
+                </Button>
+              )}
               {(key === "chatwoot" || key === "dify") && (
                 <Button
                   variant="outline"
