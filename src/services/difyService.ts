@@ -1,22 +1,21 @@
 /**
  * Dify service — Knowledge (datasets/documents) e Chat completion.
- * Cai em mock se VITE_DIFY_URL/API_KEY não estiverem definidas.
+ * Credenciais vêm do store `useIntegrationsStore`, populado pelo bootstrap
+ * (server fn `getDifyConfig`) a partir de `app_settings`.
  *
  * Docs: https://docs.dify.ai/guides/knowledge-base/maintain-knowledge-base-via-api
  *       https://docs.dify.ai/guides/application-publishing/developing-with-apis
  */
 import { mockKnowledgeDocs, mockQA } from "@/mocks/data";
 import { USE_MOCKS } from "@/lib/mocks";
+import { isDifyLive, useIntegrationsStore } from "@/stores/integrationsStore";
 import type { KnowledgeDoc, QAPair } from "@/services/types";
 
-const BASE = import.meta.env.VITE_DIFY_URL as string | undefined;
-const KEY = import.meta.env.VITE_DIFY_API_KEY as string | undefined;
-const DATASET = import.meta.env.VITE_DIFY_DATASET_ID as string | undefined;
-
-const isLive = Boolean(BASE && KEY && DATASET);
+const cfg = () => useIntegrationsStore.getState().dify;
+const isLive = () => isDifyLive(cfg());
 const delay = (ms = 200) => new Promise((r) => setTimeout(r, ms));
 
-const auth = (): HeadersInit => ({ Authorization: `Bearer ${KEY!}` });
+const auth = (): HeadersInit => ({ Authorization: `Bearer ${cfg().api_key!}` });
 const json = (): HeadersInit => ({ ...auth(), "Content-Type": "application/json" });
 
 async function http<T>(input: string, init?: RequestInit): Promise<T> {
@@ -24,6 +23,7 @@ async function http<T>(input: string, init?: RequestInit): Promise<T> {
   if (!res.ok) throw new Error(`Dify ${res.status}: ${(await res.text()).slice(0, 200)}`);
   return res.json() as Promise<T>;
 }
+
 
 // --- Knowledge --------------------------------------------------------------
 
