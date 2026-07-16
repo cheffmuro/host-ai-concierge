@@ -29,6 +29,7 @@ import { triggerHandoff } from "@/services/n8nService";
 import { useOutboxStore } from "@/stores/outboxStore";
 import { useOutboxFlusher } from "@/hooks/useOutboxFlusher";
 import { useChatwootRealtime } from "@/hooks/useChatwootRealtime";
+import { useCustomerContext } from "@/hooks/useCustomerContext";
 
 export const Route = createFileRoute("/_authenticated/inbox")({
   head: () => ({
