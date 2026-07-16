@@ -171,10 +171,16 @@ function InboxPage() {
   });
 
   const filtered = useMemo(() => {
-    return conversations.filter((c) => {
+    const list = conversations.filter((c) => {
       if (channelFilter !== "all" && c.channel !== channelFilter) return false;
       if (search && !c.customerName.toLowerCase().includes(search.toLowerCase()) && !c.preview.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
+    });
+    return list.sort((a, b) => {
+      const ca = isCritical(a) ? 1 : 0;
+      const cb = isCritical(b) ? 1 : 0;
+      if (ca !== cb) return cb - ca;
+      return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
     });
   }, [conversations, channelFilter, search]);
 
