@@ -173,8 +173,73 @@ bash /opt/host-ai-concierge/infra/evolution/create-instance.sh principal`}
       </Section>
 
       <Section
+        id="meta"
+        title="3. Instagram e Facebook (Meta)"
+        subtitle="Conecta as DMs do Instagram e mensagens da página do Facebook direto no Chatwoot."
+      >
+        <ol className="space-y-3">
+          <Step n={1}>
+            Você precisa de uma <strong>Página do Facebook</strong> e, para Instagram, de uma
+            conta <em>Business/Creator</em> vinculada a essa página. Confirme em{" "}
+            <a
+              href="https://business.facebook.com/settings/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              Meta Business Suite → Configurações
+            </a>.
+          </Step>
+          <Step n={2}>
+            No Chatwoot, abra <em>Settings → Inboxes → Add Inbox → Facebook</em>. Clique em{" "}
+            <em>Sign in with Facebook</em>, autorize o app e selecione as páginas que quer conectar.
+            Ao final, cada página conectada vira uma inbox (uma para <em>Facebook Messenger</em>,
+            outra para <em>Instagram Direct</em> se a página estiver ligada a uma conta IG).
+          </Step>
+          <Step n={3}>
+            Se o botão pedir configuração de <em>Facebook App ID</em> / <em>App Secret</em>, é
+            porque a instância Chatwoot self-hosted ainda não tem o app Meta configurado. Crie um
+            app em{" "}
+            <a
+              href="https://developers.facebook.com/apps/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              developers.facebook.com/apps
+            </a>{" "}
+            (tipo <em>Business</em>), adicione os produtos <em>Facebook Login</em>,{" "}
+            <em>Messenger</em> e <em>Instagram Messaging</em>, e defina as ENV{" "}
+            <Code>FB_APP_ID</Code> e <Code>FB_APP_SECRET</Code> no{" "}
+            <Code>infra/.env</Code> da VPS. Reinicie: <Code>docker compose up -d</Code>.
+          </Step>
+          <Step n={4}>
+            Autorize a URL de callback do Chatwoot no app Meta:{" "}
+            <Code>https://chat.seudominio.com.br/omniauth/facebook/callback</Code>.
+          </Step>
+          <Step n={5}>
+            <strong>Instagram</strong>: com a conta IG Business vinculada à Página, a inbox do
+            Instagram aparece automaticamente após a autorização. Envie um DM de teste para a
+            conta e ele deve cair na <Link to="/inbox" className="text-blue-600 hover:underline">Inbox</Link>.
+          </Step>
+          <Step n={6}>
+            Nada a fazer em <em>Integrações</em> — o Chatwoot já centraliza. O Anfitrião reconhece
+            os canais Instagram e Facebook automaticamente (ícones e filtros na inbox).
+          </Step>
+        </ol>
+        <a
+          href="https://www.chatwoot.com/docs/product/channels/facebook/create-facebook-app"
+          target="_blank"
+          rel="noreferrer"
+          className="mt-4 inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900"
+        >
+          Documentação oficial <ExternalLink className="h-3 w-3" />
+        </a>
+      </Section>
+
+      <Section
         id="dify"
-        title="3. Dify (RAG)"
+        title="4. Dify (RAG)"
         subtitle="Base de conhecimento e completion da IA."
       >
         <ol className="space-y-3">
