@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { CheckCircle2, AlertCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { pingChatwoot } from "@/services/chatwootService";
+import { pingDify } from "@/services/difyService";
+import { useIntegrationsStore } from "@/stores/integrationsStore";
 
 export const Route = createFileRoute("/_authenticated/settings/integrations")({
   head: () => ({ meta: [{ title: "Integrações — Anfitrião" }] }),
