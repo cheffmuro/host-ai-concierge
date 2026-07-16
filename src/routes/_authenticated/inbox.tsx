@@ -724,19 +724,48 @@ function ContextPanel({ conversation }: { conversation: Conversation }) {
         </div>
 
         <div>
-          <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500 mb-2">Últimas compras</p>
+          <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500 mb-2">Status operacional · últimos pedidos</p>
           <ul className="space-y-2">
-            {ctx.lastPurchases.map((p) => (
-              <li key={p.id} className="flex items-center justify-between border-b border-border/60 pb-2 last:border-none">
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-slate-900 truncate">{p.item}</p>
-                  <p className="text-[10px] text-slate-400">{p.date}</p>
-                </div>
-                <span className="text-xs text-slate-700">{fmt(p.amount)}</span>
-              </li>
-            ))}
+            {ctx.lastPurchases.map((p, i) => {
+              // Status simulado: alterna entregue / em trânsito / atrasado
+              const statuses = [
+                { Icon: PackageCheck, label: "Entregue", cls: "text-emerald-600" },
+                { Icon: Truck, label: "Em trânsito", cls: "text-sky-600" },
+                { Icon: PackageX, label: "Atrasado", cls: "text-rose-600" },
+              ] as const;
+              const s = statuses[i % statuses.length];
+              return (
+                <li key={p.id} className="flex items-center justify-between gap-2 border-b border-border/60 pb-2 last:border-none">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <s.Icon className={`h-4 w-4 shrink-0 ${s.cls}`} strokeWidth={1.5} />
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-slate-900 truncate">{p.item}</p>
+                      <p className="text-[10px] text-slate-400">{p.date} · {s.label}</p>
+                    </div>
+                  </div>
+                  <span className="text-xs text-slate-700 shrink-0">{fmt(p.amount)}</span>
+                </li>
+              );
+            })}
             {ctx.lastPurchases.length === 0 && <li className="text-xs text-slate-400">Sem compras anteriores</li>}
           </ul>
+        </div>
+
+        <div className="space-y-2 border-t border-border/60 pt-4">
+          <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Ações rápidas · SAC</p>
+          <Button
+            className="w-full justify-start gap-2 rounded-sm"
+            onClick={() => toast.success("Solicitação enviada para n8n", { description: "Etiqueta de logística reversa em processamento." })}
+          >
+            <Undo2 className="h-4 w-4" strokeWidth={1.5} /> Gerar etiqueta de reversa
+          </Button>
+          <Button
+            variant="secondary"
+            className="w-full justify-start gap-2 rounded-sm"
+            onClick={() => toast.success("Solicitação enviada para n8n", { description: "Fluxo de reembolso iniciado." })}
+          >
+            <RefreshCcw className="h-4 w-4" strokeWidth={1.5} /> Solicitar reembolso
+          </Button>
         </div>
 
         {ctx.aiReasoning && (
