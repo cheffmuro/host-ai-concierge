@@ -42,9 +42,14 @@ function fmtDuration(seconds: number): string {
 async function jsonOrNull<T>(input: string, headers: HeadersInit): Promise<T | null> {
   try {
     const res = await fetch(input, { headers });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error(`Chatwoot API error: ${res.status} ${res.statusText} - ${errorText}`);
+      return null;
+    }
     return (await res.json()) as T;
-  } catch {
+  } catch (error) {
+    console.error(`Chatwoot fetch error: ${input}`, error);
     return null;
   }
 }
