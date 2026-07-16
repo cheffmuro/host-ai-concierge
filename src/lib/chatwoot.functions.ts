@@ -30,6 +30,9 @@ async function loadCfg(): Promise<ChatwootServerConfig> {
   return v as ChatwootServerConfig;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Json = any;
+
 const api = (cfg: ChatwootServerConfig, path: string) =>
   `${cfg.url.replace(/\/+$/, "")}/api/v1/accounts/${cfg.account_id}${path}`;
 const jsonHeaders = (cfg: ChatwootServerConfig) => ({
@@ -37,7 +40,7 @@ const jsonHeaders = (cfg: ChatwootServerConfig) => ({
   "Content-Type": "application/json",
 });
 
-async function cwFetch<T>(cfg: ChatwootServerConfig, path: string, init?: RequestInit): Promise<T> {
+async function cwFetch(cfg: ChatwootServerConfig, path: string, init?: RequestInit): Promise<Json> {
   const res = await fetch(api(cfg, path), {
     ...init,
     headers: { ...jsonHeaders(cfg), ...(init?.headers ?? {}) },
@@ -46,7 +49,7 @@ async function cwFetch<T>(cfg: ChatwootServerConfig, path: string, init?: Reques
     const body = await res.text().catch(() => "");
     throw new Error(`chatwoot_${res.status}:${body.slice(0, 160)}`);
   }
-  return res.json() as Promise<T>;
+  return res.json();
 }
 
 // --- Server fns ------------------------------------------------------------
