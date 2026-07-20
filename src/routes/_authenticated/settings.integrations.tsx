@@ -1,16 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/useRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, ExternalLink, Link2Off } from "lucide-react";
 import { pingChatwoot } from "@/services/chatwootService";
 import { pingDify } from "@/services/difyService";
 import { useIntegrationsStore } from "@/stores/integrationsStore";
 import { ensureActiveSession, isJwtExpiredError, refreshSessionForRetry } from "@/lib/client-session";
+import {
+  getMetaAppConfig,
+  getMetaConnectionStatus,
+  saveMetaAppConfig,
+  startMetaOAuth,
+  disconnectMeta,
+  type MetaChannel,
+  type MetaAppConfig,
+  type MetaConnectionStatus,
+} from "@/lib/meta.functions";
 
 export const Route = createFileRoute("/_authenticated/settings/integrations")({
   head: () => ({ meta: [{ title: "Integrações — Anfitrião" }] }),
