@@ -57,19 +57,14 @@ async function hasValidCallerSession(): Promise<boolean> {
 
 async function loadRaw(key: string): Promise<Record<string, string> | null> {
   try {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data, error } = await supabaseAdmin
-      .from("app_settings").select("value").eq("key", key).maybeSingle();
-    if (error) {
-      console.error(`[integrations] loadRaw(${key}) error:`, error.message);
-      return null;
-    }
-    return (data?.value ?? {}) as Record<string, string>;
+    const { loadOrgSetting } = await import("@/lib/org-context.server");
+    return await loadOrgSetting<Record<string, string>>(key);
   } catch (e) {
     console.error(`[integrations] loadRaw(${key}) threw:`, e);
     return null;
   }
 }
+
 
 export const getChatwootConfig = createServerFn({ method: "GET" })
   .handler(async (): Promise<ChatwootPublicConfig | null> => {
