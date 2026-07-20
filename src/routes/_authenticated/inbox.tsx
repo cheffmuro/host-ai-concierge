@@ -25,7 +25,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { sendMessage, setAiHandling, listConversations } from "@/services/chatwootService";
 import { useIntegrationsStore, isChatwootLive } from "@/stores/integrationsStore";
-import { triggerHandoff } from "@/services/n8nService";
+
 import { useOutboxStore } from "@/stores/outboxStore";
 import { useOutboxFlusher } from "@/hooks/useOutboxFlusher";
 import { useChatwootRealtime } from "@/hooks/useChatwootRealtime";
@@ -278,11 +278,11 @@ function InboxPage() {
     // Reflexo otimista imediato no painel
     setConversations((prev) => prev.map((c) => (c.id === cid ? { ...c, aiHandling: false } : c)));
 
-    // Dispara em paralelo: webhook n8n + atualização direta no Chatwoot
-    const results = await Promise.allSettled([triggerHandoff(cid), setAiHandling(cid, false)]);
-    const allFailed = results.every((r) => r.status === "rejected");
-    if (allFailed) {
-      // Reverte se nenhum dos dois funcionou
+    // Atualiza flag ai_handling direto no Chatwoot
+    try {
+      await setAiHandling(cid, false);
+    } catch {
+      // Reverte se falhou
       setConversations((prev) => prev.map((c) => (c.id === cid ? { ...c, aiHandling: true } : c)));
       throw new Error("handover_failed");
     }
@@ -297,8 +297,6 @@ function InboxPage() {
       payload: {
         source: "inbox",
         agent: "Júlia Vianna",
-        n8n: results[0].status,
-        chatwoot: results[1].status,
       },
     });
   };
@@ -482,7 +480,7 @@ function ChatArea({
     toast.loading("Acionando handover…", { id: "handover" });
     try {
       await onAssume();
-      toast.success("Conversa assumida pelo time humano", { id: "handover", description: "Automação n8n disparada com sucesso" });
+      toast.success("Conversa assumida pelo time humano", { id: "handover", description: "IA desativada nesta conversa" });
     } catch {
       toast.error("Não foi possível acionar o handover", { id: "handover" });
     } finally {
@@ -755,14 +753,14 @@ function ContextPanel({ conversation }: { conversation: Conversation }) {
           <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Ações rápidas · SAC</p>
           <Button
             className="w-full justify-start gap-2 rounded-sm"
-            onClick={() => toast.success("Solicitação enviada para n8n", { description: "Etiqueta de logística reversa em processamento." })}
+            onClick={() => toast.success("Solicitação registrada", { description: "Etiqueta de logística reversa em processamento." })}
           >
             <Undo2 className="h-4 w-4" strokeWidth={1.5} /> Gerar etiqueta de reversa
           </Button>
           <Button
             variant="secondary"
             className="w-full justify-start gap-2 rounded-sm"
-            onClick={() => toast.success("Solicitação enviada para n8n", { description: "Fluxo de reembolso iniciado." })}
+            onClick={() => toast.success("Solicitação registrada", { description: "Fluxo de reembolso iniciado." })}
           >
             <RefreshCcw className="h-4 w-4" strokeWidth={1.5} /> Solicitar reembolso
           </Button>

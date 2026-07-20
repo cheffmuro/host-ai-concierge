@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/settings/integrations")({
   component: IntegrationsPage,
 });
 
-type IntegrationKey = "chatwoot" | "evolution" | "dify" | "n8n";
+type IntegrationKey = "chatwoot" | "evolution" | "dify";
 
 const definitions: Record<IntegrationKey, { label: string; fields: { name: string; label: string; type?: string; placeholder?: string }[] }> = {
   chatwoot: {
@@ -54,15 +54,6 @@ const definitions: Record<IntegrationKey, { label: string; fields: { name: strin
       { name: "url", label: "URL base", placeholder: "https://dify.suaempresa.com.br" },
       { name: "api_key", label: "API Key", type: "password" },
       { name: "dataset_id", label: "Dataset ID" },
-    ],
-  },
-  n8n: {
-    label: "n8n (Webhooks)",
-    fields: [
-      { name: "webhook_handoff", label: "Webhook Handoff" },
-      { name: "webhook_reverse_logistics", label: "Webhook Reverse Logistics" },
-      { name: "webhook_whatsapp", label: "Webhook WhatsApp" },
-      { name: "webhook_token", label: "Webhook Token (opcional)", type: "password" },
     ],
   },
 };
@@ -128,7 +119,7 @@ function IntegrationsPage() {
       const v = data[key] || {};
       if (key === "chatwoot") return pingChatwoot(v as { url?: string; user_token?: string; account_id?: string });
       if (key === "dify") return pingDify(v as { url?: string; api_key?: string; dataset_id?: string });
-      return { ok: true } as const; // evolution/n8n não têm ping remoto trivial (segredos + rota interna)
+      return { ok: true } as const; // evolution não tem ping remoto trivial (segredos + rota interna)
     } catch (error) {
       console.error(`[integrations] ping ${key} failed:`, error);
       return { ok: false as const, error: "Não foi possível testar a conexão agora." };

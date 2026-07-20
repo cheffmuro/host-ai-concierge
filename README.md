@@ -2,7 +2,7 @@
 
 > Repo: [`cheffmuro/host-ai-concierge`](https://github.com/cheffmuro/host-ai-concierge) · Path padrão na VPS: `/opt/host-ai-concierge` · Docker project: `host-ai-concierge`
 
-Concierge de atendimento omnichannel com IA (Chatwoot + Dify + n8n + Evolution API)
+Concierge de atendimento omnichannel com IA (Chatwoot + Dify + Evolution API)
 e front em React/TanStack Start.
 
 ## Estrutura do repositório
@@ -10,11 +10,7 @@ e front em React/TanStack Start.
 ```
 .
 ├── src/                  Front-end (React 19 + TanStack Start + Tailwind)
-├── n8n-workflows/        Workflows do n8n (importáveis)
-│   ├── whatsapp-rag-chatwoot.json
-│   ├── handoff.json
-│   └── reverse-logistics.json
-└── infra/                Stack Docker da VPS (Chatwoot + Dify + n8n + Evolution + Caddy)
+└── infra/                Stack Docker da VPS (Chatwoot + Dify + Evolution + Caddy)
     ├── docker-compose.yml
     ├── .env.example
     └── scripts/          bootstrap | backup | validate
@@ -39,12 +35,6 @@ bash scripts/bootstrap.sh
 
 Detalhes completos em [`infra/README.md`](./infra/README.md).
 
-### 3. Workflows n8n
-
-Após subir a stack, importe os 3 JSONs de `n8n-workflows/` em
-`https://n8n.suaempresa.com.br`. Instruções e variáveis em
-[`n8n-workflows/README.md`](./n8n-workflows/README.md).
-
 ## Desenvolvimento local
 
 ```bash
@@ -57,6 +47,5 @@ bun run dev
 - **Front**: React 19, TanStack Start, Tailwind v4, shadcn/ui
 - **Atendimento**: Chatwoot (multi-canal + agentes humanos)
 - **IA / RAG**: Dify (Knowledge Base + chat completion)
-- **Orquestração**: n8n (handoff, logística reversa, RAG glue)
 - **WhatsApp**: Evolution API
 - **Proxy/TLS**: Caddy

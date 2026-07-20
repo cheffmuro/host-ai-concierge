@@ -6,7 +6,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Anfitrião — Concierge OS para atendimento omnichannel" },
-      { name: "description", content: "Atenda WhatsApp, Instagram, Email e Webchat em um só lugar. IA concierge, base de conhecimento RAG e automações n8n. Trate seu cliente como hóspede." },
+      { name: "description", content: "Atenda WhatsApp, Instagram, Email e Webchat em um só lugar. IA concierge e base de conhecimento RAG. Trate seu cliente como hóspede." },
       { property: "og:title", content: "Anfitrião — Concierge OS" },
       { property: "og:description", content: "IA concierge omnichannel. WhatsApp, Instagram, Email, Webchat." },
     ],
@@ -73,7 +73,7 @@ function LandingPage() {
             {[
               { icon: MessageSquare, t: "Inbox unificada", d: "WhatsApp, Instagram, Email e Webchat numa só caixa, com histórico completo do cliente." },
               { icon: Brain, t: "IA concierge com RAG", d: "Sua marca treina o cérebro. Respostas baseadas na sua base de conhecimento, no seu tom de voz." },
-              { icon: Workflow, t: "Automações n8n", d: "Handoff humano, logística reversa e fluxos customizados rodando em workflows visuais." },
+              { icon: Workflow, t: "Handoff humano", d: "Assuma qualquer conversa da IA com um clique. Contexto e histórico preservados." },
               { icon: Zap, t: "Tempo real", d: "Eventos via WebSocket. O time vê e responde no mesmo segundo que o cliente fala." },
               { icon: Shield, t: "Multi-tenant seguro", d: "Cada cliente isolado por RLS. Sem vazamento de dados entre operações." },
               { icon: Globe, t: "White-label", d: "Sua marca, seu domínio. Conecte os canais sem sair do app." },

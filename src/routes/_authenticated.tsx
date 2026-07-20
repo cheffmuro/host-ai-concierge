@@ -15,14 +15,14 @@ const titles: Record<string, string> = {
   "/inbox": "Caixa Omnichannel",
   "/channels": "Canais de Atendimento",
   "/brain": "Base de Conhecimento",
-  "/workflows": "Automações",
+  
   "/settings/integrations": "Integrações",
   "/settings/guide": "Manual de Integrações",
   "/settings/users": "Usuários",
   "/profile": "Perfil",
 };
 
-const protectedPaths = ["/dashboard", "/inbox", "/channels", "/brain", "/workflows", "/settings", "/profile"];
+const protectedPaths = ["/dashboard", "/inbox", "/channels", "/brain", "/settings", "/profile"];
 
 function AuthenticatedLayout() {
   const { loading, user, session } = useAuth();

@@ -61,7 +61,7 @@ function DashboardPage() {
       {empty && (
         <Card className="rounded-sm border-amber-200 bg-amber-50 shadow-none">
           <CardContent className="py-4 text-sm text-amber-900">
-            Nenhuma integração conectada ainda. Configure Chatwoot, Evolution, Dify e n8n em <a href="/settings/integrations" className="underline font-medium">Integrações</a> para começar a ver dados reais.
+            Nenhuma integração conectada ainda. Configure Chatwoot, Evolution e Dify em <a href="/settings/integrations" className="underline font-medium">Integrações</a> para começar a ver dados reais.
           </CardContent>
         </Card>
       )}

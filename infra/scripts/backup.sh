@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Backup diário: dump dos 3 DBs + snapshot dos volumes Redis/Chatwoot/Dify/n8n.
+# Backup diário: dump dos DBs + snapshot dos volumes Redis/Chatwoot/Dify.
 # Agendar via cron: 0 3 * * * /caminho/infra/scripts/backup.sh
 set -euo pipefail
 
@@ -10,14 +10,14 @@ STAMP="$(date +%Y%m%d_%H%M%S)"
 DEST="backups/$STAMP"
 mkdir -p "$DEST"
 
-echo "→ Dump Postgres (chatwoot, dify, n8n)"
-for db in chatwoot dify n8n; do
+echo "→ Dump Postgres (chatwoot, dify)"
+for db in chatwoot dify; do
   docker compose exec -T postgres pg_dump -U "${POSTGRES_USER:-host-ai-concierge}" "$db" \
     | gzip > "$DEST/$db.sql.gz"
 done
 
 echo "→ Snapshot volumes"
-for vol in chatwoot_storage dify_storage n8n_data evolution_instances; do
+for vol in chatwoot_storage dify_storage evolution_instances; do
   docker run --rm \
     -v "host-ai-concierge_${vol}:/data:ro" \
     -v "$(pwd)/$DEST:/backup" \

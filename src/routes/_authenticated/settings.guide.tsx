@@ -75,8 +75,7 @@ function GuidePage() {
           <li><a href="#evolution" className="text-slate-700 hover:underline">2. Evolution API (WhatsApp)</a></li>
           <li><a href="#meta" className="text-slate-700 hover:underline">3. Instagram e Facebook</a></li>
           <li><a href="#dify" className="text-slate-700 hover:underline">4. Dify (RAG)</a></li>
-          <li><a href="#n8n" className="text-slate-700 hover:underline">5. n8n (Webhooks)</a></li>
-          <li><a href="#context" className="text-slate-700 hover:underline">6. Contexto do cliente (ML/site/loja)</a></li>
+          <li><a href="#context" className="text-slate-700 hover:underline">5. Contexto do cliente (ML/site/loja)</a></li>
         </ul>
       </nav>
 
@@ -93,7 +92,7 @@ function GuidePage() {
           <Step n={2}>
             DNS apontando 4 subdomínios para a VPS:{" "}
             <Code>chat.seudominio</Code>, <Code>evo.seudominio</Code>,{" "}
-            <Code>dify.seudominio</Code>, <Code>n8n.seudominio</Code>.
+            <Code>dify.seudominio</Code>.
           </Step>
           <Step n={3}>
             Confirme com <Code>bash infra/scripts/validate.sh</Code> — todos checks devem passar.
@@ -282,59 +281,16 @@ bash /opt/host-ai-concierge/infra/evolution/create-instance.sh principal`}
         </a>
       </Section>
 
-      <Section
-        id="n8n"
-        title="5. n8n (Webhooks)"
-        subtitle="Orquestra handoff humano, logística reversa e o pipeline RAG."
-      >
-        <ol className="space-y-3">
-          <Step n={1}>
-            Acesse <Code>https://n8n.seudominio.com.br</Code> (basic auth definido no{" "}
-            <Code>infra/.env</Code>).
-          </Step>
-          <Step n={2}>
-            <em>Workflows → Import from File</em> e importe os 3 JSONs de{" "}
-            <Code>n8n-workflows/</Code>:
-            <ul className="mt-1 list-disc pl-5 text-slate-600">
-              <li><Code>whatsapp-rag-chatwoot.json</Code></li>
-              <li><Code>handoff.json</Code></li>
-              <li><Code>reverse-logistics.json</Code></li>
-            </ul>
-          </Step>
-          <Step n={3}>
-            Em cada workflow, abra o nó <em>Webhook</em>, copie a <strong>Production URL</strong> e
-            ative o workflow (toggle <em>Active</em> no canto superior).
-          </Step>
-          <Step n={4}>
-            No n8n: <em>Settings → Variables</em> e configure as credenciais do Chatwoot, Evolution
-            e Dify (mesmas do passo anterior). Veja a lista completa em{" "}
-            <Code>n8n-workflows/README.md</Code>.
-          </Step>
-          <Step n={5}>
-            Cole as 3 URLs em{" "}
-            <Link to="/settings/integrations" className="text-blue-600 hover:underline">
-              Integrações → n8n
-            </Link>{" "}
-            e salve.
-          </Step>
-          <Step n={6}>
-            <strong>Token (opcional)</strong>: se você protegeu os webhooks com header de
-            autenticação, defina o mesmo valor aqui — ele será enviado no header{" "}
-            <Code>Authorization: Bearer …</Code>.
-          </Step>
-        </ol>
-      </Section>
 
       <Section
         id="context"
-        title="6. Contexto do cliente (Mercado Livre, site próprio, loja)"
+        title="5. Contexto do cliente (Mercado Livre, site próprio, loja)"
         subtitle="Traz LTV, ticket médio, pedidos e histórico de compras para o painel da conversa."
       >
         <p className="mb-4 text-sm text-slate-600">
           O painel lê a tabela <Code>customer_context</Code>. Qualquer sistema externo
           (Mercado Livre, seu site, seu ERP/loja) empurra os dados via webhook
-          assinado. Você pode chamar direto do backend do site/loja, ou usar um
-          workflow no n8n para consumir a API do Mercado Livre e reencaminhar.
+          assinado direto do backend da origem.
         </p>
         <ol className="space-y-3">
           <Step n={1}>
@@ -371,18 +327,12 @@ bash /opt/host-ai-concierge/infra/evolution/create-instance.sh principal`}
             </pre>
           </Step>
           <Step n={4}>
-            <strong>Mercado Livre</strong>: crie um workflow no n8n com o nó{" "}
-            <em>Mercado Livre → Get Orders</em> (autenticado no seu vendedor),
-            agrupe por comprador, calcule LTV/ticket, e mande no webhook acima.
-            Rode a cada 6h com o nó <em>Cron</em>.
-          </Step>
-          <Step n={5}>
-            <strong>Site próprio / loja</strong>: adicione uma chamada ao endpoint
+            <strong>Site próprio / loja / ERP</strong>: adicione uma chamada ao endpoint
             no seu backend a cada pedido novo (checkout finalizado). Assine o corpo
             com HMAC-SHA256 usando o mesmo segredo.
           </Step>
-          <Step n={6}>
-            Verifique: envie um POST de teste (via <em>curl</em>, Postman ou n8n) e abra a
+          <Step n={5}>
+            Verifique: envie um POST de teste (via <em>curl</em> ou Postman) e abra a
             conversa desse cliente na <Link to="/inbox" className="text-blue-600 hover:underline">Inbox</Link>.
             O painel lateral vai mostrar LTV, ticket médio e as últimas compras.
           </Step>

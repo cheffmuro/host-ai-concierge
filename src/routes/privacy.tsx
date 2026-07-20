@@ -70,7 +70,7 @@ function PrivacyPage() {
             <ul className="mt-3 list-disc space-y-1.5 pl-5">
               <li>Prestar o serviço de atendimento omnichannel e manter o histórico de conversas.</li>
               <li>Alimentar a base de conhecimento da IA concierge, limitado ao conteúdo autorizado pelo cliente.</li>
-              <li>Executar automações de pós-venda, handoff humano e logística reversa via n8n.</li>
+              <li>Executar automações de pós-venda, handoff humano e logística reversa.</li>
               <li>Enviar comunicações operacionais, como alertas de SLA e redefinição de senha.</li>
               <li>Melhorar a segurança, estabilidade e performance da plataforma.</li>
             </ul>
@@ -93,7 +93,7 @@ function PrivacyPage() {
               <li><strong>Meta (Facebook/Instagram/WhatsApp):</strong> troca de mensagens através de APIs oficiais. O cliente configura o próprio app de desenvolvedor.</li>
               <li><strong>Chatwoot:</strong> inbox e gestão de conversas.</li>
               <li><strong>Dify:</strong> orquestração de IA e base de conhecimento RAG.</li>
-              <li><strong>n8n:</strong> automações e workflows de negócio.</li>
+              
               <li><strong>Evolution API:</strong> conexão com WhatsApp Business, quando habilitado.</li>
               <li><strong>Lovable Cloud / Supabase:</strong> banco de dados, autenticação e hospedagem.</li>
             </ul>
