@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Inbox, BrainCircuit, Workflow, Plug, LogOut, Settings, User, BookOpen, Users } from "lucide-react";
+import { LayoutDashboard, Inbox, BrainCircuit, Workflow, Plug, LogOut, Settings, User, BookOpen, Users, Palette } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -37,8 +37,14 @@ export function AppSidebar() {
   const initials = (user?.user_metadata?.display_name || user?.email || "?").slice(0, 2).toUpperCase();
   const name = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Usuário";
   const navItems = isAdmin
-    ? [...items.slice(0, 7), { title: "Usuários", url: "/settings/users", icon: Users }, ...items.slice(7)]
+    ? [
+        ...items.slice(0, 7),
+        { title: "Usuários", url: "/settings/users", icon: Users },
+        { title: "Marca", url: "/settings/branding", icon: Palette },
+        ...items.slice(7),
+      ]
     : items;
+
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/60">
