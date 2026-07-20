@@ -284,7 +284,7 @@ bash /opt/host-ai-concierge/infra/evolution/create-instance.sh principal`}
 
       <Section
         id="context"
-        title="6. Contexto do cliente (Mercado Livre, site próprio, loja)"
+        title="5. Contexto do cliente (Mercado Livre, site próprio, loja)"
         subtitle="Traz LTV, ticket médio, pedidos e histórico de compras para o painel da conversa."
       >
         <p className="mb-4 text-sm text-slate-600">
