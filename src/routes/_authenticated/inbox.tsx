@@ -25,7 +25,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { sendMessage, setAiHandling, listConversations } from "@/services/chatwootService";
 import { useIntegrationsStore, isChatwootLive } from "@/stores/integrationsStore";
-import { triggerHandoff } from "@/services/n8nService";
+
 import { useOutboxStore } from "@/stores/outboxStore";
 import { useOutboxFlusher } from "@/hooks/useOutboxFlusher";
 import { useChatwootRealtime } from "@/hooks/useChatwootRealtime";
