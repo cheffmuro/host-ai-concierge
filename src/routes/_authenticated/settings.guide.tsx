@@ -281,48 +281,6 @@ bash /opt/host-ai-concierge/infra/evolution/create-instance.sh principal`}
         </a>
       </Section>
 
-      <Section
-        id="n8n"
-        title="5. n8n (Webhooks)"
-        subtitle="Orquestra handoff humano, logística reversa e o pipeline RAG."
-      >
-        <ol className="space-y-3">
-          <Step n={1}>
-            Acesse <Code>https://n8n.seudominio.com.br</Code> (basic auth definido no{" "}
-            <Code>infra/.env</Code>).
-          </Step>
-          <Step n={2}>
-            <em>Workflows → Import from File</em> e importe os 3 JSONs de{" "}
-            <Code>n8n-workflows/</Code>:
-            <ul className="mt-1 list-disc pl-5 text-slate-600">
-              <li><Code>whatsapp-rag-chatwoot.json</Code></li>
-              <li><Code>handoff.json</Code></li>
-              <li><Code>reverse-logistics.json</Code></li>
-            </ul>
-          </Step>
-          <Step n={3}>
-            Em cada workflow, abra o nó <em>Webhook</em>, copie a <strong>Production URL</strong> e
-            ative o workflow (toggle <em>Active</em> no canto superior).
-          </Step>
-          <Step n={4}>
-            No n8n: <em>Settings → Variables</em> e configure as credenciais do Chatwoot, Evolution
-            e Dify (mesmas do passo anterior). Veja a lista completa em{" "}
-            <Code>n8n-workflows/README.md</Code>.
-          </Step>
-          <Step n={5}>
-            Cole as 3 URLs em{" "}
-            <Link to="/settings/integrations" className="text-blue-600 hover:underline">
-              Integrações → n8n
-            </Link>{" "}
-            e salve.
-          </Step>
-          <Step n={6}>
-            <strong>Token (opcional)</strong>: se você protegeu os webhooks com header de
-            autenticação, defina o mesmo valor aqui — ele será enviado no header{" "}
-            <Code>Authorization: Bearer …</Code>.
-          </Step>
-        </ol>
-      </Section>
 
       <Section
         id="context"
