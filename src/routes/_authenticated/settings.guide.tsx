@@ -75,8 +75,7 @@ function GuidePage() {
           <li><a href="#evolution" className="text-slate-700 hover:underline">2. Evolution API (WhatsApp)</a></li>
           <li><a href="#meta" className="text-slate-700 hover:underline">3. Instagram e Facebook</a></li>
           <li><a href="#dify" className="text-slate-700 hover:underline">4. Dify (RAG)</a></li>
-          <li><a href="#n8n" className="text-slate-700 hover:underline">5. n8n (Webhooks)</a></li>
-          <li><a href="#context" className="text-slate-700 hover:underline">6. Contexto do cliente (ML/site/loja)</a></li>
+          <li><a href="#context" className="text-slate-700 hover:underline">5. Contexto do cliente (ML/site/loja)</a></li>
         </ul>
       </nav>
 
