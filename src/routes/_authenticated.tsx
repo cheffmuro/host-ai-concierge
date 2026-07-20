@@ -15,7 +15,7 @@ const titles: Record<string, string> = {
   "/inbox": "Caixa Omnichannel",
   "/channels": "Canais de Atendimento",
   "/brain": "Base de Conhecimento",
-  "/workflows": "Automações",
+  
   "/settings/integrations": "Integrações",
   "/settings/guide": "Manual de Integrações",
   "/settings/users": "Usuários",
