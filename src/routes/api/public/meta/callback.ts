@@ -174,7 +174,7 @@ export const Route = createFileRoute("/api/public/meta/callback")({
             .from("app_settings")
             .upsert({
               key: "meta_connection",
-              value: value as unknown as Record<string, unknown>,
+              value: value as unknown as Json,
               org_id: state.org_id,
               updated_by: state.user_id,
             });
