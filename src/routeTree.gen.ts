@@ -24,6 +24,7 @@ import { Route as ApiPublicCustomerContextRouteImport } from './routes/api/publi
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated/settings.users'
 import { Route as AuthenticatedSettingsIntegrationsRouteImport } from './routes/_authenticated/settings.integrations'
 import { Route as AuthenticatedSettingsGuideRouteImport } from './routes/_authenticated/settings.guide'
+import { Route as AuthenticatedSettingsBrandingRouteImport } from './routes/_authenticated/settings.branding'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -103,6 +104,12 @@ const AuthenticatedSettingsGuideRoute =
     path: '/settings/guide',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedSettingsBrandingRoute =
+  AuthenticatedSettingsBrandingRouteImport.update({
+    id: '/settings/branding',
+    path: '/settings/branding',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof AuthenticatedInboxRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/workflows': typeof AuthenticatedWorkflowsRoute
+  '/settings/branding': typeof AuthenticatedSettingsBrandingRoute
   '/settings/guide': typeof AuthenticatedSettingsGuideRoute
   '/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
@@ -131,6 +139,7 @@ export interface FileRoutesByTo {
   '/inbox': typeof AuthenticatedInboxRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/workflows': typeof AuthenticatedWorkflowsRoute
+  '/settings/branding': typeof AuthenticatedSettingsBrandingRoute
   '/settings/guide': typeof AuthenticatedSettingsGuideRoute
   '/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
@@ -149,6 +158,7 @@ export interface FileRoutesById {
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/workflows': typeof AuthenticatedWorkflowsRoute
+  '/_authenticated/settings/branding': typeof AuthenticatedSettingsBrandingRoute
   '/_authenticated/settings/guide': typeof AuthenticatedSettingsGuideRoute
   '/_authenticated/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/profile'
     | '/workflows'
+    | '/settings/branding'
     | '/settings/guide'
     | '/settings/integrations'
     | '/settings/users'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/profile'
     | '/workflows'
+    | '/settings/branding'
     | '/settings/guide'
     | '/settings/integrations'
     | '/settings/users'
@@ -200,6 +212,7 @@ export interface FileRouteTypes {
     | '/_authenticated/inbox'
     | '/_authenticated/profile'
     | '/_authenticated/workflows'
+    | '/_authenticated/settings/branding'
     | '/_authenticated/settings/guide'
     | '/_authenticated/settings/integrations'
     | '/_authenticated/settings/users'
@@ -322,6 +335,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsGuideRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/settings/branding': {
+      id: '/_authenticated/settings/branding'
+      path: '/settings/branding'
+      fullPath: '/settings/branding'
+      preLoaderRoute: typeof AuthenticatedSettingsBrandingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -332,6 +352,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedWorkflowsRoute: typeof AuthenticatedWorkflowsRoute
+  AuthenticatedSettingsBrandingRoute: typeof AuthenticatedSettingsBrandingRoute
   AuthenticatedSettingsGuideRoute: typeof AuthenticatedSettingsGuideRoute
   AuthenticatedSettingsIntegrationsRoute: typeof AuthenticatedSettingsIntegrationsRoute
   AuthenticatedSettingsUsersRoute: typeof AuthenticatedSettingsUsersRoute
@@ -344,6 +365,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedWorkflowsRoute: AuthenticatedWorkflowsRoute,
+  AuthenticatedSettingsBrandingRoute: AuthenticatedSettingsBrandingRoute,
   AuthenticatedSettingsGuideRoute: AuthenticatedSettingsGuideRoute,
   AuthenticatedSettingsIntegrationsRoute:
     AuthenticatedSettingsIntegrationsRoute,
