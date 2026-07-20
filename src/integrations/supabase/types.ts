@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string
           key: string
+          org_id: string
           updated_at: string
           updated_by: string | null
           value: Json
@@ -25,6 +26,7 @@ export type Database = {
         Insert: {
           created_at?: string
           key: string
+          org_id: string
           updated_at?: string
           updated_by?: string | null
           value?: Json
@@ -32,11 +34,20 @@ export type Database = {
         Update: {
           created_at?: string
           key?: string
+          org_id?: string
           updated_at?: string
           updated_by?: string | null
           value?: Json
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "app_settings_org_fk"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       customer_context: {
         Row: {
@@ -50,6 +61,7 @@ export type Database = {
           ltv: number
           name: string | null
           notes: string | null
+          org_id: string
           payload: Json
           phone: string | null
           source: string
@@ -68,6 +80,7 @@ export type Database = {
           ltv?: number
           name?: string | null
           notes?: string | null
+          org_id: string
           payload?: Json
           phone?: string | null
           source?: string
@@ -86,11 +99,76 @@ export type Database = {
           ltv?: number
           name?: string | null
           notes?: string | null
+          org_id?: string
           payload?: Json
           phone?: string | null
           source?: string
           tags?: string[]
           total_orders?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_context_org_fk"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_members: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
           updated_at?: string
         }
         Relationships: []
@@ -148,6 +226,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_user_org_ids: { Args: never; Returns: string[] }
       get_integrations_status: {
         Args: never
         Returns: {
@@ -161,6 +240,14 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_org_admin: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_org_member: {
+        Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
     }

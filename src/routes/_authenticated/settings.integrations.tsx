@@ -63,10 +63,24 @@ function IntegrationsPage() {
   const [data, setData] = useState<Record<string, Record<string, string>>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [orgId, setOrgId] = useState<string | null>(null);
 
   const loadSettings = async () => {
     setLoading(true);
     await ensureActiveSession();
+
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData.user?.id;
+    if (!uid) { setLoading(false); return; }
+    const { data: memberRow } = await supabase
+      .from("organization_members")
+      .select("org_id")
+      .eq("user_id", uid)
+      .limit(1)
+      .maybeSingle();
+    const currentOrg = (memberRow as { org_id: string } | null)?.org_id ?? null;
+    setOrgId(currentOrg);
+
     const fetchSettings = () => supabase.from("app_settings").select("key, value").in("key", integrationKeys);
     let { data: rows, error } = await fetchSettings();
     if (isJwtExpiredError(error)) {
@@ -126,7 +140,8 @@ function IntegrationsPage() {
   const save = async (key: IntegrationKey) => {
     setSaving(key);
     await ensureActiveSession();
-    const persist = () => supabase.from("app_settings").upsert({ key, value: data[key] || {} });
+    if (!orgId) { setSaving(null); toast.error("Organização não encontrada"); return; }
+    const persist = () => supabase.from("app_settings").upsert({ key, value: data[key] || {}, org_id: orgId });
     let { error } = await persist();
     if (isJwtExpiredError(error)) {
       await refreshSessionForRetry();
