@@ -22,7 +22,7 @@ const items = [
   { title: "Inbox", url: "/inbox", icon: Inbox },
   { title: "Canais", url: "/channels", icon: Plug },
   { title: "Brain", url: "/brain", icon: BrainCircuit },
-  { title: "Workflows", url: "/workflows", icon: Workflow },
+  { title: "Integrações", url: "/settings/integrations", icon: Settings },
   { title: "Integrações", url: "/settings/integrations", icon: Settings },
   { title: "Manual", url: "/settings/guide", icon: BookOpen },
   { title: "Perfil", url: "/profile", icon: User },
