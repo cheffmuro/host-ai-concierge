@@ -10,7 +10,7 @@ import {
   verifyMetaOAuthState,
   type MetaPage,
   type MetaWaNumber,
-} from "@/lib/meta.functions";
+import type { Json } from "@/integrations/supabase/types";
 
 function redirectBack(origin: string, status: "connected" | "error", detail?: string) {
   const url = new URL("/settings/integrations", origin);
