@@ -292,8 +292,7 @@ services:
       CACHE_REDIS_URI: redis://:${REDIS_PASSWORD}@redis:6379/2
       CACHE_REDIS_PREFIX_KEY: evolution
       CACHE_LOCAL_ENABLED: "false"
-      WEBHOOK_GLOBAL_URL: https://n8n.${BASE_DOMAIN}/webhook/whatsapp
-      WEBHOOK_GLOBAL_ENABLED: "true"
+      WEBHOOK_GLOBAL_ENABLED: "false"
     volumes:
       - evolution_instances:/evolution/instances
     healthcheck:
@@ -323,5 +322,4 @@ services:
       - chatwoot-rails
       - dify-api
       - dify-web
-      - n8n
       - evolution
