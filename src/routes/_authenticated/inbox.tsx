@@ -278,11 +278,11 @@ function InboxPage() {
     // Reflexo otimista imediato no painel
     setConversations((prev) => prev.map((c) => (c.id === cid ? { ...c, aiHandling: false } : c)));
 
-    // Dispara em paralelo: webhook n8n + atualização direta no Chatwoot
-    const results = await Promise.allSettled([triggerHandoff(cid), setAiHandling(cid, false)]);
-    const allFailed = results.every((r) => r.status === "rejected");
-    if (allFailed) {
-      // Reverte se nenhum dos dois funcionou
+    // Atualiza flag ai_handling direto no Chatwoot
+    try {
+      await setAiHandling(cid, false);
+    } catch {
+      // Reverte se falhou
       setConversations((prev) => prev.map((c) => (c.id === cid ? { ...c, aiHandling: true } : c)));
       throw new Error("handover_failed");
     }
@@ -297,8 +297,6 @@ function InboxPage() {
       payload: {
         source: "inbox",
         agent: "Júlia Vianna",
-        n8n: results[0].status,
-        chatwoot: results[1].status,
       },
     });
   };
