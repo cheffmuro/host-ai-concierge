@@ -290,8 +290,7 @@ bash /opt/host-ai-concierge/infra/evolution/create-instance.sh principal`}
         <p className="mb-4 text-sm text-slate-600">
           O painel lê a tabela <Code>customer_context</Code>. Qualquer sistema externo
           (Mercado Livre, seu site, seu ERP/loja) empurra os dados via webhook
-          assinado. Você pode chamar direto do backend do site/loja, ou usar um
-          workflow no n8n para consumir a API do Mercado Livre e reencaminhar.
+          assinado direto do backend da origem.
         </p>
         <ol className="space-y-3">
           <Step n={1}>
@@ -328,18 +327,12 @@ bash /opt/host-ai-concierge/infra/evolution/create-instance.sh principal`}
             </pre>
           </Step>
           <Step n={4}>
-            <strong>Mercado Livre</strong>: crie um workflow no n8n com o nó{" "}
-            <em>Mercado Livre → Get Orders</em> (autenticado no seu vendedor),
-            agrupe por comprador, calcule LTV/ticket, e mande no webhook acima.
-            Rode a cada 6h com o nó <em>Cron</em>.
-          </Step>
-          <Step n={5}>
-            <strong>Site próprio / loja</strong>: adicione uma chamada ao endpoint
+            <strong>Site próprio / loja / ERP</strong>: adicione uma chamada ao endpoint
             no seu backend a cada pedido novo (checkout finalizado). Assine o corpo
             com HMAC-SHA256 usando o mesmo segredo.
           </Step>
-          <Step n={6}>
-            Verifique: envie um POST de teste (via <em>curl</em>, Postman ou n8n) e abra a
+          <Step n={5}>
+            Verifique: envie um POST de teste (via <em>curl</em> ou Postman) e abra a
             conversa desse cliente na <Link to="/inbox" className="text-blue-600 hover:underline">Inbox</Link>.
             O painel lateral vai mostrar LTV, ticket médio e as últimas compras.
           </Step>
