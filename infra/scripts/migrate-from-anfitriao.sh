@@ -14,8 +14,8 @@ OLD="anfitriao"
 NEW="host-ai-concierge"
 STAMP="$(date +%Y%m%d_%H%M%S)"
 BACKUP_DIR="backups/migration_${STAMP}"
-VOLUMES=(postgres_data redis_data chatwoot_storage dify_storage n8n_data evolution_instances caddy_data caddy_config)
-DBS=(chatwoot dify n8n)
+VOLUMES=(postgres_data redis_data chatwoot_storage dify_storage evolution_instances caddy_data caddy_config)
+DBS=(chatwoot dify)
 
 YES=0; AUTO_ROLLBACK=0
 for arg in "$@"; do

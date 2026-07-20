@@ -12,7 +12,7 @@ cd "$(dirname "$0")/.."
 OLD="anfitriao"
 NEW="host-ai-concierge"
 STAMP="${1:-}"
-VOLUMES=(postgres_data redis_data chatwoot_storage dify_storage n8n_data evolution_instances caddy_data caddy_config)
+VOLUMES=(postgres_data redis_data chatwoot_storage dify_storage evolution_instances caddy_data caddy_config)
 
 echo "═══ Rollback ${NEW} → ${OLD} ═══"
 
