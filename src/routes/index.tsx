@@ -6,7 +6,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Anfitrião — Concierge OS para atendimento omnichannel" },
-      { name: "description", content: "Atenda WhatsApp, Instagram, Email e Webchat em um só lugar. IA concierge, base de conhecimento RAG e automações n8n. Trate seu cliente como hóspede." },
+      { name: "description", content: "Atenda WhatsApp, Instagram, Email e Webchat em um só lugar. IA concierge e base de conhecimento RAG. Trate seu cliente como hóspede." },
       { property: "og:title", content: "Anfitrião — Concierge OS" },
       { property: "og:description", content: "IA concierge omnichannel. WhatsApp, Instagram, Email, Webchat." },
     ],
