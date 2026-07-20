@@ -1,16 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin } from "@/hooks/useRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, ExternalLink, Link2Off } from "lucide-react";
 import { pingChatwoot } from "@/services/chatwootService";
 import { pingDify } from "@/services/difyService";
 import { useIntegrationsStore } from "@/stores/integrationsStore";
 import { ensureActiveSession, isJwtExpiredError, refreshSessionForRetry } from "@/lib/client-session";
+import {
+  getMetaAppConfig,
+  getMetaConnectionStatus,
+  saveMetaAppConfig,
+  startMetaOAuth,
+  disconnectMeta,
+  type MetaChannel,
+  type MetaAppConfig,
+  type MetaConnectionStatus,
+} from "@/lib/meta.functions";
 
 export const Route = createFileRoute("/_authenticated/settings/integrations")({
   head: () => ({ meta: [{ title: "Integrações — Anfitrião" }] }),
@@ -256,6 +267,331 @@ function IntegrationsPage() {
           </section>
         );
       })}
+
+      <MetaCard isAdmin={isAdmin} />
     </div>
+  );
+}
+
+// ---------- Meta (Instagram / Messenger / WhatsApp Cloud) --------------------
+
+const META_CALLBACK_HINT =
+  typeof window !== "undefined"
+    ? `${window.location.origin}/api/public/meta/callback`
+    : "https://host-concierge.lovable.app/api/public/meta/callback";
+
+function MetaCard({ isAdmin }: { isAdmin: boolean }) {
+  const fetchApp = useServerFn(getMetaAppConfig);
+  const fetchStatus = useServerFn(getMetaConnectionStatus);
+  const saveApp = useServerFn(saveMetaAppConfig);
+  const startOAuth = useServerFn(startMetaOAuth);
+  const disconnect = useServerFn(disconnectMeta);
+
+  const [app, setApp] = useState<{ app_id: string; app_secret: string; redirect_uri: string }>({
+    app_id: "",
+    app_secret: "",
+    redirect_uri: META_CALLBACK_HINT,
+  });
+  const [appCfg, setAppCfg] = useState<MetaAppConfig | null>(null);
+  const [status, setStatus] = useState<MetaConnectionStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [channels, setChannels] = useState<Record<MetaChannel, boolean>>({
+    instagram: true,
+    messenger: true,
+    whatsapp: false,
+  });
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [a, s] = await Promise.all([fetchApp(), fetchStatus()]);
+      setAppCfg(a);
+      setStatus(s);
+      if (a?.app_id || a?.redirect_uri) {
+        setApp((prev) => ({
+          app_id: a.app_id ?? prev.app_id,
+          app_secret: "",
+          redirect_uri: a.redirect_uri ?? prev.redirect_uri,
+        }));
+      }
+    } catch (e) {
+      console.error("[meta] load failed:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+    // Handle ?meta=connected|error from callback redirect.
+    const params = new URLSearchParams(window.location.search);
+    const meta = params.get("meta");
+    if (meta === "connected") {
+      toast.success("Meta conectada com sucesso");
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (meta === "error") {
+      toast.error("Falha ao conectar com Meta", { description: params.get("meta_detail") ?? undefined });
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const onSaveApp = async () => {
+    if (!app.app_id || !app.app_secret || !app.redirect_uri) {
+      toast.error("Preencha App ID, App Secret e Redirect URI");
+      return;
+    }
+    setSaving(true);
+    try {
+      await saveApp({ data: app });
+      toast.success("Credenciais Meta salvas");
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onConnect = async () => {
+    const selected = (Object.keys(channels) as MetaChannel[]).filter((c) => channels[c]);
+    if (selected.length === 0) {
+      toast.error("Selecione ao menos um canal");
+      return;
+    }
+    setConnecting(true);
+    try {
+      const { authorization_url } = await startOAuth({ data: { channels: selected } });
+      window.location.href = authorization_url;
+    } catch (e) {
+      setConnecting(false);
+      toast.error(e instanceof Error ? e.message : "Falha ao iniciar OAuth");
+    }
+  };
+
+  const onDisconnect = async () => {
+    if (!confirm("Desconectar a conta Meta desta organização?")) return;
+    try {
+      await disconnect();
+      toast.success("Meta desconectada");
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao desconectar");
+    }
+  };
+
+  if (loading) {
+    return (
+      <section className="rounded-md border border-border/60 bg-white p-6 text-sm text-slate-500">
+        Carregando Meta…
+      </section>
+    );
+  }
+
+  const configured = appCfg?.configured ?? false;
+  const connected = status?.connected ?? false;
+
+  return (
+    <section className="rounded-md border border-border/60 bg-white p-6 space-y-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-medium text-slate-900">Meta — Instagram, Messenger e WhatsApp Cloud</h2>
+          <p className="text-xs text-slate-500">
+            OAuth direto com a Meta.{" "}
+            <a
+              href="/settings/guide#meta"
+              className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+            >
+              Como criar o app <ExternalLink className="h-3 w-3" />
+            </a>
+          </p>
+        </div>
+        <span
+          className={`flex items-center gap-1.5 text-xs ${
+            connected ? "text-emerald-600" : configured ? "text-amber-600" : "text-slate-400"
+          }`}
+        >
+          {connected ? (
+            <>
+              <CheckCircle2 className="h-3.5 w-3.5" /> Conectado
+            </>
+          ) : configured ? (
+            <>
+              <AlertCircle className="h-3.5 w-3.5" /> Pronto para conectar
+            </>
+          ) : (
+            <>
+              <AlertCircle className="h-3.5 w-3.5" /> Pendente
+            </>
+          )}
+        </span>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="meta-app-id">App ID</Label>
+          <Input
+            id="meta-app-id"
+            value={app.app_id}
+            onChange={(e) => setApp((a) => ({ ...a, app_id: e.target.value }))}
+            placeholder="1234567890"
+            disabled={!isAdmin}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="meta-app-secret">App Secret</Label>
+          <Input
+            id="meta-app-secret"
+            type="password"
+            value={app.app_secret}
+            onChange={(e) => setApp((a) => ({ ...a, app_secret: e.target.value }))}
+            placeholder={appCfg?.configured ? "•••••••• (salvo — reenviar só se trocar)" : ""}
+            disabled={!isAdmin}
+          />
+        </div>
+        <div className="space-y-2 sm:col-span-2">
+          <Label htmlFor="meta-redirect">Redirect URI</Label>
+          <Input
+            id="meta-redirect"
+            value={app.redirect_uri}
+            onChange={(e) => setApp((a) => ({ ...a, redirect_uri: e.target.value }))}
+            disabled={!isAdmin}
+          />
+          <p className="text-[11px] text-slate-500">
+            Cole exatamente essa URL em <em>Facebook Login for Business → Valid OAuth Redirect URIs</em>.
+          </p>
+        </div>
+      </div>
+
+      {isAdmin && (
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={onSaveApp} disabled={saving} className="rounded-sm">
+            {saving ? (
+              <>
+                <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                Salvando…
+              </>
+            ) : (
+              "Salvar credenciais"
+            )}
+          </Button>
+        </div>
+      )}
+
+      <div className="border-t border-slate-100 pt-5 space-y-3">
+        <div className="text-xs font-medium uppercase tracking-wide text-slate-500">
+          Canais para autorizar
+        </div>
+        <div className="flex flex-wrap gap-4 text-sm text-slate-700">
+          {(["instagram", "messenger", "whatsapp"] as MetaChannel[]).map((c) => (
+            <label key={c} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={channels[c]}
+                onChange={(e) => setChannels((s) => ({ ...s, [c]: e.target.checked }))}
+                disabled={!isAdmin || !configured}
+              />
+              {c === "instagram" ? "Instagram Direct" : c === "messenger" ? "Facebook Messenger" : "WhatsApp Cloud"}
+            </label>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {isAdmin && (
+            <Button
+              onClick={onConnect}
+              disabled={!configured || connecting}
+              className="rounded-sm"
+              title={configured ? "" : "Salve as credenciais primeiro"}
+            >
+              {connecting ? (
+                <>
+                  <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                  Redirecionando…
+                </>
+              ) : connected ? (
+                "Reautorizar com Meta"
+              ) : (
+                "Conectar com Meta"
+              )}
+            </Button>
+          )}
+          {isAdmin && connected && (
+            <Button variant="outline" onClick={onDisconnect} className="rounded-sm">
+              <Link2Off className="mr-1.5 h-3 w-3" />
+              Desconectar
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {connected && status && (
+        <div className="border-t border-slate-100 pt-5 space-y-3 text-sm">
+          <div className="text-xs text-slate-500">
+            Conectado como <strong className="text-slate-800">{status.user_name ?? "conta Meta"}</strong>
+            {status.connected_at && (
+              <> · em {new Date(status.connected_at).toLocaleString()}</>
+            )}
+          </div>
+
+          {status.pages.length > 0 && (
+            <div>
+              <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">
+                Páginas do Facebook / contas Instagram
+              </div>
+              <ul className="space-y-1.5">
+                {status.pages.map((p) => (
+                  <li
+                    key={p.id}
+                    className="flex items-center justify-between rounded border border-slate-100 bg-slate-50 px-3 py-2 text-xs"
+                  >
+                    <div>
+                      <div className="font-medium text-slate-800">{p.name}</div>
+                      <div className="text-slate-500">
+                        Page ID {p.id}
+                        {p.instagram && <> · IG @{p.instagram.username ?? p.instagram.id}</>}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {status.wa_numbers.length > 0 && (
+            <div>
+              <div className="text-xs font-medium uppercase tracking-wide text-slate-500 mb-2">
+                Números WhatsApp Cloud
+              </div>
+              <ul className="space-y-1.5">
+                {status.wa_numbers.map((n) => (
+                  <li
+                    key={n.id}
+                    className="rounded border border-slate-100 bg-slate-50 px-3 py-2 text-xs"
+                  >
+                    <div className="font-medium text-slate-800">
+                      {n.display_phone_number ?? n.id}
+                    </div>
+                    <div className="text-slate-500">
+                      {n.verified_name && <>{n.verified_name} · </>}
+                      WABA {n.waba_id ?? "-"}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {status.pages.length === 0 && status.wa_numbers.length === 0 && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              OAuth aprovado mas nenhuma Página / conta Instagram / número WhatsApp foi
+              autorizada. Reautorize e selecione as contas na tela de consentimento da Meta.
+            </div>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
