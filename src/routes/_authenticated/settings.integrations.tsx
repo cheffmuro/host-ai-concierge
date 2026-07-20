@@ -140,7 +140,8 @@ function IntegrationsPage() {
   const save = async (key: IntegrationKey) => {
     setSaving(key);
     await ensureActiveSession();
-    const persist = () => supabase.from("app_settings").upsert({ key, value: data[key] || {} });
+    if (!orgId) { setSaving(null); toast.error("Organização não encontrada"); return; }
+    const persist = () => supabase.from("app_settings").upsert({ key, value: data[key] || {}, org_id: orgId });
     let { error } = await persist();
     if (isJwtExpiredError(error)) {
       await refreshSessionForRetry();
