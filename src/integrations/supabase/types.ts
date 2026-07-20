@@ -117,6 +117,50 @@ export type Database = {
           },
         ]
       }
+      org_branding: {
+        Row: {
+          accent_color: string | null
+          brand_name: string | null
+          created_at: string
+          custom_domain: string | null
+          logo_url: string | null
+          org_id: string
+          primary_color: string | null
+          support_email: string | null
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string | null
+          brand_name?: string | null
+          created_at?: string
+          custom_domain?: string | null
+          logo_url?: string | null
+          org_id: string
+          primary_color?: string | null
+          support_email?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string | null
+          brand_name?: string | null
+          created_at?: string
+          custom_domain?: string | null
+          logo_url?: string | null
+          org_id?: string
+          primary_color?: string | null
+          support_email?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_branding_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           created_at: string
@@ -227,6 +271,7 @@ export type Database = {
     }
     Functions: {
       current_user_org_ids: { Args: never; Returns: string[] }
+      current_user_primary_org: { Args: never; Returns: string }
       get_integrations_status: {
         Args: never
         Returns: {

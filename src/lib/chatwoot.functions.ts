@@ -19,16 +19,14 @@ interface ChatwootServerConfig {
 }
 
 async function loadCfg(): Promise<ChatwootServerConfig> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin
-    .from("app_settings").select("value").eq("key", "chatwoot").maybeSingle();
-  if (error) throw new Error(error.message);
-  const v = (data?.value ?? {}) as Partial<ChatwootServerConfig>;
+  const { loadOrgSetting } = await import("@/lib/org-context.server");
+  const v = (await loadOrgSetting<Partial<ChatwootServerConfig>>("chatwoot")) ?? {};
   if (!v.url || !v.user_token || !v.account_id) {
     throw new Error("chatwoot_not_configured");
   }
   return v as ChatwootServerConfig;
 }
+
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = any;

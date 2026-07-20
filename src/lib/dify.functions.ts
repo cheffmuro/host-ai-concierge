@@ -15,14 +15,12 @@ interface DifyServerConfig {
 }
 
 async function loadCfg(): Promise<DifyServerConfig> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin
-    .from("app_settings").select("value").eq("key", "dify").maybeSingle();
-  if (error) throw new Error(error.message);
-  const v = (data?.value ?? {}) as Partial<DifyServerConfig>;
+  const { loadOrgSetting } = await import("@/lib/org-context.server");
+  const v = (await loadOrgSetting<Partial<DifyServerConfig>>("dify")) ?? {};
   if (!v.url || !v.api_key || !v.dataset_id) throw new Error("dify_not_configured");
   return v as DifyServerConfig;
 }
+
 
 const base = (cfg: DifyServerConfig) => cfg.url.replace(/\/+$/, "");
 const auth = (cfg: DifyServerConfig) => ({ Authorization: `Bearer ${cfg.api_key}` });

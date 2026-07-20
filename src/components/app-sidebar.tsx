@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Inbox, BrainCircuit, Workflow, Plug, LogOut, Settings, User, BookOpen, Users } from "lucide-react";
+import { LayoutDashboard, Inbox, BrainCircuit, Workflow, Plug, LogOut, Settings, User, BookOpen, Users, Palette } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdmin } from "@/hooks/useRole";
+import { useBranding } from "@/hooks/useBranding";
+
 
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -33,28 +35,47 @@ export function AppSidebar() {
   const isActive = (p: string) => currentPath === p || currentPath.startsWith(p + "/");
   const { user, signOut } = useAuth();
   const { isAdmin } = useIsAdmin();
+  const { branding } = useBranding();
   const navigate = useNavigate();
+  const brandName = branding?.brand_name || "Anfitrião";
+  const brandInitial = brandName.slice(0, 1).toUpperCase();
+  const primaryColor = branding?.primary_color || "#0f172a";
   const initials = (user?.user_metadata?.display_name || user?.email || "?").slice(0, 2).toUpperCase();
+
   const name = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Usuário";
   const navItems = isAdmin
-    ? [...items.slice(0, 7), { title: "Usuários", url: "/settings/users", icon: Users }, ...items.slice(7)]
+    ? [
+        ...items.slice(0, 7),
+        { title: "Usuários", url: "/settings/users", icon: Users },
+        { title: "Marca", url: "/settings/branding", icon: Palette },
+        ...items.slice(7),
+      ]
     : items;
+
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/60">
       <SidebarHeader className="border-b border-border/60">
         <div className="flex items-center gap-3 px-2 py-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-sm bg-slate-900 text-slate-50 font-medium">
-            A
-          </div>
+          {branding?.logo_url ? (
+            <img src={branding.logo_url} alt={brandName} className="h-8 w-8 object-contain rounded-sm" />
+          ) : (
+            <div
+              className="flex h-8 w-8 items-center justify-center rounded-sm text-slate-50 font-medium"
+              style={{ backgroundColor: primaryColor }}
+            >
+              {brandInitial}
+            </div>
+          )}
           {!collapsed && (
             <div className="flex flex-col leading-tight">
-              <span className="text-sm font-medium tracking-tight text-slate-900">Anfitrião</span>
+              <span className="text-sm font-medium tracking-tight text-slate-900">{brandName}</span>
               <span className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Concierge OS</span>
             </div>
           )}
         </div>
       </SidebarHeader>
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
