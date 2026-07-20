@@ -480,7 +480,7 @@ function ChatArea({
     toast.loading("Acionando handover…", { id: "handover" });
     try {
       await onAssume();
-      toast.success("Conversa assumida pelo time humano", { id: "handover", description: "Automação n8n disparada com sucesso" });
+      toast.success("Conversa assumida pelo time humano", { id: "handover", description: "IA desativada nesta conversa" });
     } catch {
       toast.error("Não foi possível acionar o handover", { id: "handover" });
     } finally {
