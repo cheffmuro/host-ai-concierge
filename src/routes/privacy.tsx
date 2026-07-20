@@ -93,7 +93,7 @@ function PrivacyPage() {
               <li><strong>Meta (Facebook/Instagram/WhatsApp):</strong> troca de mensagens através de APIs oficiais. O cliente configura o próprio app de desenvolvedor.</li>
               <li><strong>Chatwoot:</strong> inbox e gestão de conversas.</li>
               <li><strong>Dify:</strong> orquestração de IA e base de conhecimento RAG.</li>
-              <li><strong>n8n:</strong> automações e workflows de negócio.</li>
+              
               <li><strong>Evolution API:</strong> conexão com WhatsApp Business, quando habilitado.</li>
               <li><strong>Lovable Cloud / Supabase:</strong> banco de dados, autenticação e hospedagem.</li>
             </ul>
