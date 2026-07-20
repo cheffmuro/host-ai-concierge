@@ -22,7 +22,7 @@ const titles: Record<string, string> = {
   "/profile": "Perfil",
 };
 
-const protectedPaths = ["/dashboard", "/inbox", "/channels", "/brain", "/workflows", "/settings", "/profile"];
+const protectedPaths = ["/dashboard", "/inbox", "/channels", "/brain", "/settings", "/profile"];
 
 function AuthenticatedLayout() {
   const { loading, user, session } = useAuth();
