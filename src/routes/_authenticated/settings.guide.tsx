@@ -174,32 +174,25 @@ bash /opt/host-ai-concierge/infra/evolution/create-instance.sh principal`}
 
       <Section
         id="meta"
-        title="3. Instagram e Facebook (Meta)"
-        subtitle="Conecta as DMs do Instagram e mensagens da página do Facebook direto no Chatwoot."
+        title="3. Instagram, Facebook e WhatsApp Cloud (Meta)"
+        subtitle="OAuth direto com a Meta para Instagram Direct, Messenger e WhatsApp Cloud API."
       >
         <ol className="space-y-3">
           <Step n={1}>
-            Você precisa de uma <strong>Página do Facebook</strong> e, para Instagram, de uma
-            conta <em>Business/Creator</em> vinculada a essa página. Confirme em{" "}
+            Você precisa de uma <strong>Página do Facebook</strong> e, para Instagram,
+            de uma conta <em>Business/Creator</em> vinculada. Para WhatsApp Cloud, uma
+            conta <em>WhatsApp Business Account (WABA)</em> no{" "}
             <a
               href="https://business.facebook.com/settings/"
               target="_blank"
               rel="noreferrer"
               className="text-blue-600 hover:underline"
             >
-              Meta Business Suite → Configurações
+              Meta Business Suite
             </a>.
           </Step>
           <Step n={2}>
-            No Chatwoot, abra <em>Settings → Inboxes → Add Inbox → Facebook</em>. Clique em{" "}
-            <em>Sign in with Facebook</em>, autorize o app e selecione as páginas que quer conectar.
-            Ao final, cada página conectada vira uma inbox (uma para <em>Facebook Messenger</em>,
-            outra para <em>Instagram Direct</em> se a página estiver ligada a uma conta IG).
-          </Step>
-          <Step n={3}>
-            Se o botão pedir configuração de <em>Facebook App ID</em> / <em>App Secret</em>, é
-            porque a instância Chatwoot self-hosted ainda não tem o app Meta configurado. Crie um
-            app em{" "}
+            Crie um app em{" "}
             <a
               href="https://developers.facebook.com/apps/"
               target="_blank"
@@ -208,27 +201,43 @@ bash /opt/host-ai-concierge/infra/evolution/create-instance.sh principal`}
             >
               developers.facebook.com/apps
             </a>{" "}
-            (tipo <em>Business</em>), adicione os produtos <em>Facebook Login</em>,{" "}
-            <em>Messenger</em> e <em>Instagram Messaging</em>, e defina as ENV{" "}
-            <Code>FB_APP_ID</Code> e <Code>FB_APP_SECRET</Code> no{" "}
-            <Code>infra/.env</Code> da VPS. Reinicie: <Code>docker compose up -d</Code>.
+            do tipo <em>Business</em>. Adicione os produtos <em>Facebook Login for Business</em>,
+            e conforme o canal: <em>Messenger</em>, <em>Instagram Messaging</em>,{" "}
+            <em>WhatsApp</em>.
+          </Step>
+          <Step n={3}>
+            Em <em>App settings → Basic</em>, copie <strong>App ID</strong> e{" "}
+            <strong>App Secret</strong>.
           </Step>
           <Step n={4}>
-            Autorize a URL de callback do Chatwoot no app Meta:{" "}
-            <Code>https://chat.seudominio.com.br/omniauth/facebook/callback</Code>.
+            Em <em>Facebook Login for Business → Settings</em>, adicione o Redirect URI
+            abaixo em <em>Valid OAuth Redirect URIs</em> (é o mesmo que você vai colar em
+            "Redirect URI" do card Meta):
+            <pre className="mt-2 overflow-x-auto rounded bg-slate-900 p-3 text-[12px] text-slate-100">
+{`https://host-concierge.lovable.app/api/public/meta/callback`}
+            </pre>
+            Se você usa domínio custom, adicione também a variante do seu domínio:
+            <pre className="mt-2 overflow-x-auto rounded bg-slate-900 p-3 text-[12px] text-slate-100">
+{`https://anfitriao.app.br/api/public/meta/callback`}
+            </pre>
           </Step>
           <Step n={5}>
-            <strong>Instagram</strong>: com a conta IG Business vinculada à Página, a inbox do
-            Instagram aparece automaticamente após a autorização. Envie um DM de teste para a
-            conta e ele deve cair na <Link to="/inbox" className="text-blue-600 hover:underline">Inbox</Link>.
+            Cole App ID, App Secret e Redirect URI em{" "}
+            <Link to="/settings/integrations" className="text-blue-600 hover:underline">
+              Integrações → Meta
+            </Link>, salve e clique em <strong>Conectar com Meta</strong>. Escolha
+            quais canais autorizar (Instagram / Messenger / WhatsApp).
           </Step>
           <Step n={6}>
-            Nada a fazer em <em>Integrações</em> — o Chatwoot já centraliza. O Anfitrião reconhece
-            os canais Instagram e Facebook automaticamente (ícones e filtros na inbox).
+            Após aprovação, o painel lista as Páginas, contas Instagram Business e
+            números WhatsApp autorizados. Enquanto o app estiver em modo{" "}
+            <em>Development</em> na Meta, só usuários adicionados como testers
+            conseguem completar o OAuth — envie para <em>App Review</em> antes de
+            operar com clientes reais.
           </Step>
         </ol>
         <a
-          href="https://www.chatwoot.com/docs/product/channels/facebook/create-facebook-app"
+          href="https://developers.facebook.com/docs/facebook-login-for-business"
           target="_blank"
           rel="noreferrer"
           className="mt-4 inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-900"
@@ -236,6 +245,7 @@ bash /opt/host-ai-concierge/infra/evolution/create-instance.sh principal`}
           Documentação oficial <ExternalLink className="h-3 w-3" />
         </a>
       </Section>
+
 
       <Section
         id="dify"
