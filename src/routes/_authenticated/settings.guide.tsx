@@ -92,7 +92,7 @@ function GuidePage() {
           <Step n={2}>
             DNS apontando 4 subdomínios para a VPS:{" "}
             <Code>chat.seudominio</Code>, <Code>evo.seudominio</Code>,{" "}
-            <Code>dify.seudominio</Code>, <Code>n8n.seudominio</Code>.
+            <Code>dify.seudominio</Code>.
           </Step>
           <Step n={3}>
             Confirme com <Code>bash infra/scripts/validate.sh</Code> — todos checks devem passar.
