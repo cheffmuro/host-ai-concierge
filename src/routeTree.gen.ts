@@ -25,6 +25,7 @@ import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authen
 import { Route as AuthenticatedSettingsIntegrationsRouteImport } from './routes/_authenticated/settings.integrations'
 import { Route as AuthenticatedSettingsGuideRouteImport } from './routes/_authenticated/settings.guide'
 import { Route as AuthenticatedSettingsBrandingRouteImport } from './routes/_authenticated/settings.branding'
+import { Route as ApiPublicMetaCallbackRouteImport } from './routes/api/public/meta/callback'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -110,6 +111,11 @@ const AuthenticatedSettingsBrandingRoute =
     path: '/settings/branding',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const ApiPublicMetaCallbackRoute = ApiPublicMetaCallbackRouteImport.update({
+  id: '/api/public/meta/callback',
+  path: '/api/public/meta/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -127,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/api/public/customer-context': typeof ApiPublicCustomerContextRoute
+  '/api/public/meta/callback': typeof ApiPublicMetaCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -144,6 +151,7 @@ export interface FileRoutesByTo {
   '/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/api/public/customer-context': typeof ApiPublicCustomerContextRoute
+  '/api/public/meta/callback': typeof ApiPublicMetaCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -163,6 +171,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/integrations': typeof AuthenticatedSettingsIntegrationsRoute
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/api/public/customer-context': typeof ApiPublicCustomerContextRoute
+  '/api/public/meta/callback': typeof ApiPublicMetaCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
     | '/settings/integrations'
     | '/settings/users'
     | '/api/public/customer-context'
+    | '/api/public/meta/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -199,6 +209,7 @@ export interface FileRouteTypes {
     | '/settings/integrations'
     | '/settings/users'
     | '/api/public/customer-context'
+    | '/api/public/meta/callback'
   id:
     | '__root__'
     | '/'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/integrations'
     | '/_authenticated/settings/users'
     | '/api/public/customer-context'
+    | '/api/public/meta/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -226,6 +238,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
   ApiPublicCustomerContextRoute: typeof ApiPublicCustomerContextRoute
+  ApiPublicMetaCallbackRoute: typeof ApiPublicMetaCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -342,6 +355,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsBrandingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/api/public/meta/callback': {
+      id: '/api/public/meta/callback'
+      path: '/api/public/meta/callback'
+      fullPath: '/api/public/meta/callback'
+      preLoaderRoute: typeof ApiPublicMetaCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -383,17 +403,8 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
   ApiPublicCustomerContextRoute: ApiPublicCustomerContextRoute,
+  ApiPublicMetaCallbackRoute: ApiPublicMetaCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

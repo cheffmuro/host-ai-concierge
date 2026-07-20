@@ -163,10 +163,6 @@ export const Route = createFileRoute("/api/public/meta/callback")({
             expires_at: longRes.expires_in ? Math.floor(Date.now() / 1000) + longRes.expires_in : null,
             user_id: me.id,
             user_name: me.name,
-            scopes: state.channels.flatMap((c) => {
-              // eslint-disable-next-line @typescript-eslint/no-var-requires
-              return [] as string[];
-            }),
             channels: state.channels,
             pages,
             wa_numbers: waNumbers,
@@ -175,7 +171,12 @@ export const Route = createFileRoute("/api/public/meta/callback")({
           };
           const { error: upErr } = await supabaseAdmin
             .from("app_settings")
-            .upsert({ key: "meta_connection", value, org_id: state.org_id, updated_by: state.user_id });
+            .upsert({
+              key: "meta_connection",
+              value: value as unknown as Record<string, unknown>,
+              org_id: state.org_id,
+              updated_by: state.user_id,
+            });
           if (upErr) return redirectBack(origin, "error", upErr.message);
 
           return redirectBack(origin, "connected");
