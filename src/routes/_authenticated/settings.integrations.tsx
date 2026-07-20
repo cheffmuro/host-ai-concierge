@@ -267,6 +267,8 @@ function IntegrationsPage() {
           </section>
         );
       })}
+
+      <MetaCard isAdmin={isAdmin} />
     </div>
   );
 }
