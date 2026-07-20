@@ -119,7 +119,7 @@ function IntegrationsPage() {
       const v = data[key] || {};
       if (key === "chatwoot") return pingChatwoot(v as { url?: string; user_token?: string; account_id?: string });
       if (key === "dify") return pingDify(v as { url?: string; api_key?: string; dataset_id?: string });
-      return { ok: true } as const; // evolution/n8n não têm ping remoto trivial (segredos + rota interna)
+      return { ok: true } as const; // evolution não tem ping remoto trivial (segredos + rota interna)
     } catch (error) {
       console.error(`[integrations] ping ${key} failed:`, error);
       return { ok: false as const, error: "Não foi possível testar a conexão agora." };

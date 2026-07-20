@@ -15,11 +15,6 @@ dify.{$BASE_DOMAIN} {
 	encode gzip
 }
 
-n8n.{$BASE_DOMAIN} {
-	reverse_proxy n8n:5678
-	encode gzip
-}
-
 evo.{$BASE_DOMAIN} {
 	reverse_proxy evolution:8080
 	encode gzip
