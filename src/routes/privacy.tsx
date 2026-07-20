@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 
-export const Route = createFileRoute("/privacidade")({
+export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
       { title: "Política de Privacidade — Anfitrião" },
