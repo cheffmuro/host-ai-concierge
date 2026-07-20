@@ -10,7 +10,7 @@ interface AuthCtx {
   signOut: () => Promise<void>;
 }
 
-const protectedPaths = ["/dashboard", "/inbox", "/channels", "/brain", "/workflows", "/settings", "/profile"];
+const protectedPaths = ["/dashboard", "/inbox", "/channels", "/brain", "/settings", "/profile"];
 
 function redirectProtectedPathToLogin() {
   if (typeof window === "undefined") return;
