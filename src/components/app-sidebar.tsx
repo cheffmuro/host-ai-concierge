@@ -44,10 +44,10 @@ export function AppSidebar() {
   const name = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Usuário";
   const navItems = isAdmin
     ? [
-        ...items.slice(0, 7),
+        ...items.slice(0, 5),
         { title: "Usuários", url: "/settings/users", icon: Users },
         { title: "Marca", url: "/settings/branding", icon: Palette },
-        ...items.slice(7),
+        ...items.slice(5),
       ]
     : items;
 
