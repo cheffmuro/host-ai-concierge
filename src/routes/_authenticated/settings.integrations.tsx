@@ -28,7 +28,7 @@ export const Route = createFileRoute("/_authenticated/settings/integrations")({
   component: IntegrationsPage,
 });
 
-type IntegrationKey = "chatwoot" | "evolution" | "dify" | "n8n";
+type IntegrationKey = "chatwoot" | "evolution" | "dify";
 
 const definitions: Record<IntegrationKey, { label: string; fields: { name: string; label: string; type?: string; placeholder?: string }[] }> = {
   chatwoot: {
@@ -54,15 +54,6 @@ const definitions: Record<IntegrationKey, { label: string; fields: { name: strin
       { name: "url", label: "URL base", placeholder: "https://dify.suaempresa.com.br" },
       { name: "api_key", label: "API Key", type: "password" },
       { name: "dataset_id", label: "Dataset ID" },
-    ],
-  },
-  n8n: {
-    label: "n8n (Webhooks)",
-    fields: [
-      { name: "webhook_handoff", label: "Webhook Handoff" },
-      { name: "webhook_reverse_logistics", label: "Webhook Reverse Logistics" },
-      { name: "webhook_whatsapp", label: "Webhook WhatsApp" },
-      { name: "webhook_token", label: "Webhook Token (opcional)", type: "password" },
     ],
   },
 };
