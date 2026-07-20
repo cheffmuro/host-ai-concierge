@@ -21,7 +21,7 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
-required=(BASE_DOMAIN POSTGRES_PASSWORD REDIS_PASSWORD CHATWOOT_SECRET_KEY_BASE DIFY_SECRET_KEY N8N_ENCRYPTION_KEY EVOLUTION_API_KEY)
+required=(BASE_DOMAIN POSTGRES_PASSWORD REDIS_PASSWORD CHATWOOT_SECRET_KEY_BASE DIFY_SECRET_KEY EVOLUTION_API_KEY)
 for v in "${required[@]}"; do
   if ! grep -qE "^$v=.+" .env; then
     echo "ERRO: variável obrigatória '$v' vazia no .env"
@@ -51,5 +51,5 @@ echo "✅ Stack no ar. Acesse:"
 . ./.env
 echo "   Chatwoot: https://chatwoot.${BASE_DOMAIN}"
 echo "   Dify:     https://dify.${BASE_DOMAIN}"
-echo "   n8n:      https://n8n.${BASE_DOMAIN}"
+echo "   Evo:      https://evo.${BASE_DOMAIN}"
 echo "   Evo:      https://evo.${BASE_DOMAIN}"
