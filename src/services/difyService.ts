@@ -55,7 +55,7 @@ export async function listKnowledgeDocuments(): Promise<KnowledgeDoc[]> {
 }
 
 export async function uploadDocument(file: File): Promise<KnowledgeDoc> {
-  if (!isLive()) {
+  if (isDemoMode() || !isLive()) {
     await delay();
     return {
       id: `d_${Date.now()}`, name: file.name,
@@ -81,7 +81,7 @@ export async function uploadDocument(file: File): Promise<KnowledgeDoc> {
 }
 
 export async function removeDocument(id: string): Promise<void> {
-  if (!isLive()) { await delay(); return; }
+  if (isDemoMode() || !isLive()) { await delay(); return; }
   await difyRemoveDocument({ data: { id } });
 }
 
