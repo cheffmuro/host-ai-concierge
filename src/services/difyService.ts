@@ -87,6 +87,7 @@ export async function removeDocument(id: string): Promise<void> {
 
 export async function listQAPairs(): Promise<QAPair[]> {
   await delay();
+  if (isDemoMode()) return demoQA;
   return USE_MOCKS ? mockQA : [];
 }
 
