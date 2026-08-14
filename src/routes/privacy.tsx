@@ -156,7 +156,7 @@ function PrivacyPage() {
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-8 text-xs text-slate-500 md:flex-row">
           <span>© {new Date().getFullYear()} Anfitrião · Concierge OS</span>
           <div className="flex gap-6">
-            <Link to="/privacidade" className="hover:text-slate-900">Privacidade</Link>
+            <Link to="/privacy" className="hover:text-slate-900">Privacidade</Link>
             <Link to="/login">Entrar</Link>
             <Link to="/signup">Criar conta</Link>
           </div>
