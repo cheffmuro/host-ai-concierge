@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { CheckCircle2, AlertCircle, Loader2, ExternalLink, Link2Off } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, ExternalLink, Link2Off, PlayCircle } from "lucide-react";
 import { pingChatwoot } from "@/services/chatwootService";
 import { pingDify } from "@/services/difyService";
 import { useIntegrationsStore } from "@/stores/integrationsStore";
@@ -27,6 +27,7 @@ import {
 function DemoModeCard() {
   const enabled = useDemoStore((s) => s.enabled);
   const setEnabled = useDemoStore((s) => s.setEnabled);
+  const navigate = useNavigate();
 
   return (
     <section className="rounded-md border border-indigo-200 bg-indigo-50/60 p-6 space-y-3">
@@ -43,16 +44,31 @@ function DemoModeCard() {
           {enabled ? "Ativo" : "Desligado"}
         </span>
       </div>
-      <Button
-        type="button"
-        variant={enabled ? "outline" : "default"}
-        onClick={() => {
-          setEnabled(!enabled);
-          toast.success(enabled ? "Modo demonstração desligado" : "Modo demonstração ligado");
-        }}
-      >
-        {enabled ? "Desligar demonstração" : "Ligar demonstração"}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          onClick={() => {
+            setEnabled(true);
+            toast.success("Simulação iniciada — 8 conversas na Inbox");
+            navigate({ to: "/inbox" });
+          }}
+        >
+          <PlayCircle className="mr-2 h-4 w-4" />
+          Iniciar simulação de 8 conversas
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!enabled}
+          onClick={() => {
+            setEnabled(false);
+            toast.success("Modo demonstração desligado");
+          }}
+        >
+          Desligar demonstração
+        </Button>
+      </div>
+
     </section>
   );
 }
