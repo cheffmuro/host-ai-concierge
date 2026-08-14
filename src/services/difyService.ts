@@ -40,6 +40,7 @@ async function blobToBase64(blob: Blob): Promise<string> {
 }
 
 export async function listKnowledgeDocuments(): Promise<KnowledgeDoc[]> {
+  if (isDemoMode()) { await delay(120); return demoKnowledgeDocs; }
   if (!isLive()) { await delay(); return USE_MOCKS ? mockKnowledgeDocs : []; }
   const data = await difyListDocuments();
   const docs = (data as { data: DifyDoc[] }).data;
