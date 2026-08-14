@@ -11,6 +11,7 @@ import { CheckCircle2, AlertCircle, Loader2, ExternalLink, Link2Off } from "luci
 import { pingChatwoot } from "@/services/chatwootService";
 import { pingDify } from "@/services/difyService";
 import { useIntegrationsStore } from "@/stores/integrationsStore";
+import { useDemoStore } from "@/lib/demo-mode";
 import { ensureActiveSession, isJwtExpiredError, refreshSessionForRetry } from "@/lib/client-session";
 import {
   getMetaAppConfig,
