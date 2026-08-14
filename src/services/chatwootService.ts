@@ -202,7 +202,7 @@ export const chatwootInboxId = () => cfg().inbox_id;
 
 /** Liga/desliga IA para uma conversa via custom_attributes. */
 export async function setAiHandling(conversationId: string, enabled: boolean): Promise<void> {
-  if (!isLive()) return;
+  if (isDemoMode() || !isLive()) return;
   await chatwootSetAiHandling({ data: { conversationId, enabled } });
 }
 
