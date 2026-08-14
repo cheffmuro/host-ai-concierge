@@ -3,6 +3,8 @@
  * `@/lib/dify.functions.ts`. A `api_key` fica no servidor.
  */
 import { mockKnowledgeDocs, mockQA } from "@/mocks/data";
+import { demoKnowledgeDocs, demoQA, demoRagAnswer } from "@/mocks/demo-scenario";
+import { isDemoMode } from "@/lib/demo-mode";
 import { USE_MOCKS } from "@/lib/mocks";
 import { isDifyLive, useIntegrationsStore } from "@/stores/integrationsStore";
 import type { KnowledgeDoc, QAPair } from "@/services/types";
