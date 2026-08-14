@@ -144,6 +144,7 @@ async function attachmentsToPayload(atts?: Attachment[]) {
 // --- Public API -------------------------------------------------------------
 
 export async function listConversations(): Promise<Conversation[]> {
+  if (isDemoMode()) { await delay(150); return demoConversations.map((c) => ({ ...c })); }
   if (!isLive()) { await delay(); return useMockFallback() ? mockConversations : []; }
   const data = await chatwootListConversations();
   const payload = (data as { data: { payload: CwConversation[] } }).data.payload;
@@ -151,6 +152,7 @@ export async function listConversations(): Promise<Conversation[]> {
 }
 
 export async function getConversation(id: string): Promise<Conversation | undefined> {
+  if (isDemoMode()) { await delay(120); return demoConversations.find((c) => c.id === id); }
   if (!isLive()) { await delay(); return useMockFallback() ? mockConversations.find((c) => c.id === id) : undefined; }
   const res = await chatwootGetConversation({ data: { id } });
   const { conversation, messages } = res as { conversation: CwConversation; messages: CwMessage[] };
@@ -162,6 +164,13 @@ export async function sendMessage(
   content: string,
   attachments?: Attachment[],
 ): Promise<Message> {
+  if (isDemoMode()) {
+    await delay(400);
+    return {
+      id: `demo_${Date.now()}`, author: "agent", content,
+      timestamp: new Date().toISOString(), status: "delivered", attachments,
+    };
+  }
   if (!isLive()) {
     await delay(450);
     if (typeof navigator !== "undefined" && !navigator.onLine) throw new Error("offline");
@@ -179,11 +188,12 @@ export async function sendMessage(
 }
 
 export async function assignAgent(conversationId: string, agentId: string): Promise<void> {
-  if (!isLive()) return;
+  if (isDemoMode() || !isLive()) return;
   await chatwootAssignAgent({ data: { conversationId, agentId } });
 }
 
 export async function listAutomations(conversationId: string): Promise<AutomationEvent[]> {
+  if (isDemoMode()) return demoConversations.find((c) => c.id === conversationId)?.context.automations ?? [];
   if (!isLive()) return useMockFallback() ? (mockConversations.find((c) => c.id === conversationId)?.context.automations ?? []) : [];
   return [];
 }
