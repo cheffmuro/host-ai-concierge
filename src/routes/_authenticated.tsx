@@ -5,6 +5,8 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { useIntegrationsBootstrap } from "@/hooks/useIntegrationsBootstrap";
 import { useOnboardingGuard } from "@/hooks/useOnboardingGuard";
+import { DemoModeBanner } from "@/components/demo-mode-banner";
+import { useDemoStore } from "@/lib/demo-mode";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -31,6 +33,11 @@ function AuthenticatedLayout() {
   const title = titles[path] ?? "Anfitrião";
   useIntegrationsBootstrap(Boolean(session));
   useOnboardingGuard();
+  const hydrateDemo = useDemoStore((s) => s.hydrate);
+
+  useEffect(() => {
+    hydrateDemo();
+  }, [hydrateDemo]);
 
   useEffect(() => {
     if (!loading && !user && protectedPaths.some((p) => path.startsWith(p))) {
@@ -57,6 +64,7 @@ function AuthenticatedLayout() {
             <span className="text-slate-300">/</span>
             <span className="text-sm font-medium text-slate-900">{title}</span>
           </header>
+          <DemoModeBanner />
           <main className="flex-1 min-h-0">
             <Outlet />
           </main>
