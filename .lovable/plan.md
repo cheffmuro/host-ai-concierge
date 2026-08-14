@@ -39,3 +39,7 @@ Com o modo ligado, eu navego pelo app automaticamente e entrego um relatório co
 - Nenhuma escrita em Supabase; server functions não são chamadas em modo demo.
 - Independente do `USE_MOCKS` atual (que continua `false` por padrão).
 - Relatório gerado via navegação automatizada no preview, com prints.
+
+## Correção de build (primeiro passo)
+
+O projeto está com dois erros de compilação que precisam ser corrigidos antes da simulação: os links de rodapé em `src/routes/index.tsx` e `src/routes/privacy.tsx` apontam para `/privacidade`, mas a rota existente é `/privacy`. Ajustar os dois links.
