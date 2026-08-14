@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Upload, FileText, Trash2, RefreshCw, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { mockKnowledgeDocs, mockQA } from "@/mocks/data";
 import { USE_MOCKS } from "@/lib/mocks";
+import { useDemoMode } from "@/lib/demo-mode";
+import { demoKnowledgeDocs, demoQA } from "@/mocks/demo-scenario";
 import type { KnowledgeDoc, QAPair } from "@/services/types";
 import { addQAPair, uploadDocument } from "@/services/difyService";
 
@@ -27,11 +29,18 @@ export const Route = createFileRoute("/_authenticated/brain")({
 });
 
 function BrainPage() {
+  const demoMode = useDemoMode();
   const [docs, setDocs] = useState<KnowledgeDoc[]>(USE_MOCKS ? mockKnowledgeDocs : []);
   const [qa, setQa] = useState<QAPair[]>(USE_MOCKS ? mockQA : []);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (!demoMode) return;
+    setDocs(demoKnowledgeDocs);
+    setQa(demoQA);
+  }, [demoMode]);
 
   const handleUpload = async (files: FileList | null) => {
     if (!files) return;

@@ -11,6 +11,8 @@ import { ptBR } from "date-fns/locale";
 import { useInboxStore } from "@/stores/inboxStore";
 import { mockConversations } from "@/mocks/data";
 import { USE_MOCKS } from "@/lib/mocks";
+import { useDemoMode } from "@/lib/demo-mode";
+import { demoConversations } from "@/mocks/demo-scenario";
 import type {
   Attachment, AutomationEvent, AutomationStatus, AutomationType,
   Conversation, Message, MessageStatus, Sentiment,
@@ -80,6 +82,7 @@ function isCritical(c: Conversation): boolean {
 function InboxPage() {
   const { selectedId, setSelected, search, setSearch, channelFilter, setChannelFilter, contextOpen, setContextOpen } = useInboxStore();
   const [conversations, setConversations] = useState<Conversation[]>(USE_MOCKS ? mockConversations : []);
+  const demoMode = useDemoMode();
   const [loadingConversations, setLoadingConversations] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const rawSelected = conversations.find((c) => c.id === selectedId) ?? null;
@@ -96,6 +99,12 @@ function InboxPage() {
   // Carrega histórico do Chatwoot no mount + quando credenciais chegarem
   // + polling suave para cobrir gaps do websocket.
   useEffect(() => {
+    if (demoMode) {
+      setConversations(demoConversations.map((c) => ({ ...c })));
+      setLoadError(null);
+      setLoadingConversations(false);
+      return;
+    }
     if (USE_MOCKS) return;
     const cfg = useIntegrationsStore.getState().chatwoot;
     if (!isChatwootLive(cfg)) return;
@@ -129,7 +138,7 @@ function InboxPage() {
     // Fallback polling a cada 60s (o realtime cuida do resto).
     const timer = setInterval(fetchOnce, 60_000);
     return () => { cancelled = true; clearInterval(timer); };
-  }, [integrationsVersion, integrationsLoaded]);
+  }, [integrationsVersion, integrationsLoaded, demoMode]);
 
   useEffect(() => {
     if (!selectedId && conversations.length > 0 && typeof window !== "undefined" && window.innerWidth >= 1024) {
