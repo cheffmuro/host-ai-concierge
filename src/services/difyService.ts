@@ -111,6 +111,15 @@ export async function askDify(
   user = "host-ai-concierge-agent",
   conversationId?: string,
 ): Promise<DifyAnswer> {
+  if (isDemoMode()) {
+    await delay(700);
+    const { answer, source } = demoRagAnswer(query);
+    return {
+      answer,
+      conversation_id: conversationId,
+      metadata: { retriever_resources: [{ document_name: source, score: 0.92 }] },
+    };
+  }
   if (!isLive()) {
     await delay(600);
     return {
