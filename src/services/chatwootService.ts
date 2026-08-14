@@ -4,6 +4,8 @@
  * Mantemos os mappers exportados para o consumer realtime (ActionCable).
  */
 import { mockConversations } from "@/mocks/data";
+import { demoConversations } from "@/mocks/demo-scenario";
+import { isDemoMode } from "@/lib/demo-mode";
 import { USE_MOCKS } from "@/lib/mocks";
 import { isChatwootLive, useIntegrationsStore } from "@/stores/integrationsStore";
 import type {
