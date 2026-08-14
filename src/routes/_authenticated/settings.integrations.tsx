@@ -201,6 +201,9 @@ function IntegrationsPage() {
         </div>
       )}
 
+      {isAdmin && <DemoModeCard />}
+
+
       {integrationKeys.map((key) => {
         const def = definitions[key];
         const configured = isConfigured(key);
