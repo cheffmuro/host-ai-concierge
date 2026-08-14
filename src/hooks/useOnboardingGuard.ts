@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useIntegrationsStore } from "@/stores/integrationsStore";
 import { useIsAdmin } from "@/hooks/useRole";
+import { useDemoMode } from "@/lib/demo-mode";
 
 const ALLOW = ["/settings/integrations", "/settings/guide", "/settings/users", "/settings/branding", "/profile"];
 
@@ -17,12 +18,14 @@ export function useOnboardingGuard() {
   const loaded = useIntegrationsStore((s) => s.loaded);
   const chatwoot = useIntegrationsStore((s) => s.chatwoot.configured);
   const dify = useIntegrationsStore((s) => s.dify.configured);
+  const demoMode = useDemoMode();
 
   useEffect(() => {
+    if (demoMode) return;
     if (!loaded || roleLoading) return;
     if (!isAdmin) return;
     if (chatwoot && dify) return;
     if (ALLOW.some((p) => path.startsWith(p))) return;
     navigate({ to: "/settings/integrations" });
-  }, [loaded, roleLoading, isAdmin, chatwoot, dify, path, navigate]);
+  }, [loaded, roleLoading, isAdmin, chatwoot, dify, path, navigate, demoMode]);
 }

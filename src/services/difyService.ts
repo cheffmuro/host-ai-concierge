@@ -3,6 +3,8 @@
  * `@/lib/dify.functions.ts`. A `api_key` fica no servidor.
  */
 import { mockKnowledgeDocs, mockQA } from "@/mocks/data";
+import { demoKnowledgeDocs, demoQA, demoRagAnswer } from "@/mocks/demo-scenario";
+import { isDemoMode } from "@/lib/demo-mode";
 import { USE_MOCKS } from "@/lib/mocks";
 import { isDifyLive, useIntegrationsStore } from "@/stores/integrationsStore";
 import type { KnowledgeDoc, QAPair } from "@/services/types";
@@ -38,6 +40,7 @@ async function blobToBase64(blob: Blob): Promise<string> {
 }
 
 export async function listKnowledgeDocuments(): Promise<KnowledgeDoc[]> {
+  if (isDemoMode()) { await delay(120); return demoKnowledgeDocs; }
   if (!isLive()) { await delay(); return USE_MOCKS ? mockKnowledgeDocs : []; }
   const data = await difyListDocuments();
   const docs = (data as { data: DifyDoc[] }).data;
@@ -52,7 +55,7 @@ export async function listKnowledgeDocuments(): Promise<KnowledgeDoc[]> {
 }
 
 export async function uploadDocument(file: File): Promise<KnowledgeDoc> {
-  if (!isLive()) {
+  if (isDemoMode() || !isLive()) {
     await delay();
     return {
       id: `d_${Date.now()}`, name: file.name,
@@ -78,12 +81,13 @@ export async function uploadDocument(file: File): Promise<KnowledgeDoc> {
 }
 
 export async function removeDocument(id: string): Promise<void> {
-  if (!isLive()) { await delay(); return; }
+  if (isDemoMode() || !isLive()) { await delay(); return; }
   await difyRemoveDocument({ data: { id } });
 }
 
 export async function listQAPairs(): Promise<QAPair[]> {
   await delay();
+  if (isDemoMode()) return demoQA;
   return USE_MOCKS ? mockQA : [];
 }
 
@@ -107,6 +111,15 @@ export async function askDify(
   user = "host-ai-concierge-agent",
   conversationId?: string,
 ): Promise<DifyAnswer> {
+  if (isDemoMode()) {
+    await delay(700);
+    const { answer, source } = demoRagAnswer(query);
+    return {
+      answer,
+      conversation_id: conversationId,
+      metadata: { retriever_resources: [{ document_name: source, score: 0.92 }] },
+    };
+  }
   if (!isLive()) {
     await delay(600);
     return {

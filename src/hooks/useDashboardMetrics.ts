@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { getDashboardMetrics, type DashboardMetrics } from "@/lib/metrics.functions";
 import { useIntegrationsStore } from "@/stores/integrationsStore";
+import { useDemoMode } from "@/lib/demo-mode";
+import { demoMetrics } from "@/mocks/demo-scenario";
 
 const EMPTY: DashboardMetrics = {
   configured: false,
@@ -17,8 +19,15 @@ export function useDashboardMetrics() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const version = useIntegrationsStore((s) => s.version);
+  const demo = useDemoMode();
 
   useEffect(() => {
+    if (demo) {
+      setData(demoMetrics as DashboardMetrics);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     const fetchOnce = async () => {
       try {
@@ -34,7 +43,7 @@ export function useDashboardMetrics() {
     fetchOnce();
     const t = setInterval(fetchOnce, 60_000);
     return () => { cancelled = true; clearInterval(t); };
-  }, [version]);
+  }, [version, demo]);
 
   return { data, loading, error };
 }

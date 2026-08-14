@@ -8,6 +8,8 @@ import { ChannelIcon, channelLabel } from "@/components/channel-icon";
 import { IntegrationsBanner } from "@/components/integrations-banner";
 import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { useDashboardMetrics } from "@/hooks/useDashboardMetrics";
+import { useDemoMode } from "@/lib/demo-mode";
+import { demoConversations } from "@/mocks/demo-scenario";
 
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -42,8 +44,9 @@ function Metric({ label, value, delta, positive }: { label: string; value: strin
 }
 
 function DashboardPage() {
+  const demoMode = useDemoMode();
   const { data: live, loading } = useDashboardMetrics();
-  const empty = !USE_MOCKS && !live.configured;
+  const empty = !USE_MOCKS && !demoMode && !live.configured;
   const m = USE_MOCKS
     ? mockMetrics
     : {
@@ -53,11 +56,15 @@ function DashboardPage() {
         activeConversations: live.activeConversations,
         weeklyVolume: live.weeklyVolume,
       };
-  const handoffs = USE_MOCKS ? mockConversations.filter((c) => !c.aiHandling).slice(0, 4) : [];
+  const handoffs = demoMode
+    ? demoConversations.filter((c) => !c.aiHandling).slice(0, 4)
+    : USE_MOCKS
+      ? mockConversations.filter((c) => !c.aiHandling).slice(0, 4)
+      : [];
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      <IntegrationsBanner />
+      {!demoMode && <IntegrationsBanner />}
       {empty && (
         <Card className="rounded-sm border-amber-200 bg-amber-50 shadow-none">
           <CardContent className="py-4 text-sm text-amber-900">

@@ -4,6 +4,8 @@
  * Mantemos os mappers exportados para o consumer realtime (ActionCable).
  */
 import { mockConversations } from "@/mocks/data";
+import { demoConversations } from "@/mocks/demo-scenario";
+import { isDemoMode } from "@/lib/demo-mode";
 import { USE_MOCKS } from "@/lib/mocks";
 import { isChatwootLive, useIntegrationsStore } from "@/stores/integrationsStore";
 import type {
@@ -142,6 +144,7 @@ async function attachmentsToPayload(atts?: Attachment[]) {
 // --- Public API -------------------------------------------------------------
 
 export async function listConversations(): Promise<Conversation[]> {
+  if (isDemoMode()) { await delay(150); return demoConversations.map((c) => ({ ...c })); }
   if (!isLive()) { await delay(); return useMockFallback() ? mockConversations : []; }
   const data = await chatwootListConversations();
   const payload = (data as { data: { payload: CwConversation[] } }).data.payload;
@@ -149,6 +152,7 @@ export async function listConversations(): Promise<Conversation[]> {
 }
 
 export async function getConversation(id: string): Promise<Conversation | undefined> {
+  if (isDemoMode()) { await delay(120); return demoConversations.find((c) => c.id === id); }
   if (!isLive()) { await delay(); return useMockFallback() ? mockConversations.find((c) => c.id === id) : undefined; }
   const res = await chatwootGetConversation({ data: { id } });
   const { conversation, messages } = res as { conversation: CwConversation; messages: CwMessage[] };
@@ -160,6 +164,13 @@ export async function sendMessage(
   content: string,
   attachments?: Attachment[],
 ): Promise<Message> {
+  if (isDemoMode()) {
+    await delay(400);
+    return {
+      id: `demo_${Date.now()}`, author: "agent", content,
+      timestamp: new Date().toISOString(), status: "delivered", attachments,
+    };
+  }
   if (!isLive()) {
     await delay(450);
     if (typeof navigator !== "undefined" && !navigator.onLine) throw new Error("offline");
@@ -177,11 +188,12 @@ export async function sendMessage(
 }
 
 export async function assignAgent(conversationId: string, agentId: string): Promise<void> {
-  if (!isLive()) return;
+  if (isDemoMode() || !isLive()) return;
   await chatwootAssignAgent({ data: { conversationId, agentId } });
 }
 
 export async function listAutomations(conversationId: string): Promise<AutomationEvent[]> {
+  if (isDemoMode()) return demoConversations.find((c) => c.id === conversationId)?.context.automations ?? [];
   if (!isLive()) return useMockFallback() ? (mockConversations.find((c) => c.id === conversationId)?.context.automations ?? []) : [];
   return [];
 }
@@ -190,12 +202,13 @@ export const chatwootInboxId = () => cfg().inbox_id;
 
 /** Liga/desliga IA para uma conversa via custom_attributes. */
 export async function setAiHandling(conversationId: string, enabled: boolean): Promise<void> {
-  if (!isLive()) return;
+  if (isDemoMode() || !isLive()) return;
   await chatwootSetAiHandling({ data: { conversationId, enabled } });
 }
 
 /** Configuração para o consumer realtime (lida do store no momento do uso). */
 export const getChatwootRealtimeConfig = () => {
+  if (isDemoMode()) return { baseUrl: undefined, pubsubToken: undefined, accountId: undefined };
   const c = cfg();
   return { baseUrl: c.url, pubsubToken: c.pubsub_token, accountId: c.account_id };
 };

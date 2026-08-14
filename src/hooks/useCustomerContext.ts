@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getCustomerContext } from "@/lib/customerContext.functions";
+import { useDemoMode } from "@/lib/demo-mode";
 import type { CustomerContext } from "@/services/types";
 
 /**
@@ -11,8 +12,10 @@ export function useCustomerContext(identifier?: string) {
   const fetchCtx = useServerFn(getCustomerContext);
   const [data, setData] = useState<CustomerContext | null>(null);
   const [loading, setLoading] = useState(false);
+  const demo = useDemoMode();
 
   useEffect(() => {
+    if (demo) { setData(null); setLoading(false); return; }
     if (!identifier) { setData(null); return; }
     let cancelled = false;
     setLoading(true);
@@ -21,7 +24,7 @@ export function useCustomerContext(identifier?: string) {
       .catch(() => { if (!cancelled) setData(null); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [identifier, fetchCtx]);
+  }, [identifier, fetchCtx, demo]);
 
   return { data, loading };
 }

@@ -11,6 +11,7 @@ import { CheckCircle2, AlertCircle, Loader2, ExternalLink, Link2Off } from "luci
 import { pingChatwoot } from "@/services/chatwootService";
 import { pingDify } from "@/services/difyService";
 import { useIntegrationsStore } from "@/stores/integrationsStore";
+import { useDemoStore } from "@/lib/demo-mode";
 import { ensureActiveSession, isJwtExpiredError, refreshSessionForRetry } from "@/lib/client-session";
 import {
   getMetaAppConfig,
@@ -22,6 +23,39 @@ import {
   type MetaAppConfig,
   type MetaConnectionStatus,
 } from "@/lib/meta.functions";
+
+function DemoModeCard() {
+  const enabled = useDemoStore((s) => s.enabled);
+  const setEnabled = useDemoStore((s) => s.setEnabled);
+
+  return (
+    <section className="rounded-md border border-indigo-200 bg-indigo-50/60 p-6 space-y-3">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-sm font-medium text-slate-900">Modo demonstração</h2>
+          <p className="text-xs text-slate-600">
+            Simula o app com tudo conectado: hóspedes conversando na Inbox, métricas no
+            dashboard e base de conhecimento indexada. Nenhum dado é gravado e nenhuma
+            integração real é chamada enquanto estiver ligado.
+          </p>
+        </div>
+        <span className={`shrink-0 text-xs ${enabled ? "text-indigo-700" : "text-slate-400"}`}>
+          {enabled ? "Ativo" : "Desligado"}
+        </span>
+      </div>
+      <Button
+        type="button"
+        variant={enabled ? "outline" : "default"}
+        onClick={() => {
+          setEnabled(!enabled);
+          toast.success(enabled ? "Modo demonstração desligado" : "Modo demonstração ligado");
+        }}
+      >
+        {enabled ? "Desligar demonstração" : "Ligar demonstração"}
+      </Button>
+    </section>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/settings/integrations")({
   head: () => ({ meta: [{ title: "Integrações — Anfitrião" }] }),
@@ -200,6 +234,9 @@ function IntegrationsPage() {
           <div>Apenas administradores podem editar integrações. Você pode ver o status atual abaixo.</div>
         </div>
       )}
+
+      {isAdmin && <DemoModeCard />}
+
 
       {integrationKeys.map((key) => {
         const def = definitions[key];
