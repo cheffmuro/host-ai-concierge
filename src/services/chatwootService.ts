@@ -208,6 +208,7 @@ export async function setAiHandling(conversationId: string, enabled: boolean): P
 
 /** Configuração para o consumer realtime (lida do store no momento do uso). */
 export const getChatwootRealtimeConfig = () => {
+  if (isDemoMode()) return { baseUrl: undefined, pubsubToken: undefined, accountId: undefined };
   const c = cfg();
   return { baseUrl: c.url, pubsubToken: c.pubsub_token, accountId: c.account_id };
 };
