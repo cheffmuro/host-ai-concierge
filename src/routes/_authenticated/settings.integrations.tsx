@@ -43,16 +43,31 @@ function DemoModeCard() {
           {enabled ? "Ativo" : "Desligado"}
         </span>
       </div>
-      <Button
-        type="button"
-        variant={enabled ? "outline" : "default"}
-        onClick={() => {
-          setEnabled(!enabled);
-          toast.success(enabled ? "Modo demonstração desligado" : "Modo demonstração ligado");
-        }}
-      >
-        {enabled ? "Desligar demonstração" : "Ligar demonstração"}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          onClick={() => {
+            setEnabled(true);
+            toast.success("Simulação iniciada — 8 conversas na Inbox");
+            navigate({ to: "/inbox" });
+          }}
+        >
+          <PlayCircle className="mr-2 h-4 w-4" />
+          Iniciar simulação de 8 conversas
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!enabled}
+          onClick={() => {
+            setEnabled(false);
+            toast.success("Modo demonstração desligado");
+          }}
+        >
+          Desligar demonstração
+        </Button>
+      </div>
+
     </section>
   );
 }
