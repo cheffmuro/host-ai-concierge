@@ -240,7 +240,7 @@ function apply(
   }
 
   // step.kind === "case" — cria o caso real de logística reversa
-  const created = useReverseStore.getState().createCase({
+  const { reverseCase: created } = useReverseStore.getState().createCase({
     conversationId: conv.id,
     customerName: conv.customerName,
     customerIdentifier: conv.customerIdentifier,
@@ -255,11 +255,12 @@ function apply(
     id: uid(),
     timestamp: nowIso,
     type: "reverse_logistics",
-    title: "Etiqueta de reversa emitida",
-    description: `Coleta domiciliar agendada (${created.courier}).`,
-    status: "success",
+    title: "Reversa aguardando aprovação do supervisor",
+    description: `Coleta domiciliar pré-agendada (${created.courier}) — etiqueta final pendente de aprovação.`,
+    status: "pending",
     payload: { protocol: created.protocol, tracking: created.tracking },
   };
+
   set({
     conversation: {
       ...conv,
