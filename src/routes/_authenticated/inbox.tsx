@@ -146,6 +146,15 @@ function InboxPage() {
     return () => { cancelled = true; clearInterval(timer); };
   }, [integrationsVersion, integrationsLoaded, demoMode]);
 
+  // Atendimento ao vivo simulado: injeta/atualiza a conversa no topo da fila.
+  useEffect(() => {
+    if (!demoMode || !liveConversation) return;
+    setConversations((prev) => [liveConversation, ...prev.filter((c) => c.id !== liveConversation.id)]);
+    setSelected(liveConversation.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveConversation, demoMode]);
+
+
   useEffect(() => {
     if (!selectedId && conversations.length > 0 && typeof window !== "undefined" && window.innerWidth >= 1024) {
       setSelected(conversations[0].id);
