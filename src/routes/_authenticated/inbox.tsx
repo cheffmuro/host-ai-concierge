@@ -460,6 +460,11 @@ function ChatArea({
   const [pending, setPending] = useState<Attachment[]>([]);
   const [assuming, setAssuming] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [conversation.messages.length, typing]);
 
   // Cleanup object URLs on unmount / when attachments removed
   useEffect(() => {
