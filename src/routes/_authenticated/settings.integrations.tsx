@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { CheckCircle2, AlertCircle, Loader2, ExternalLink, Link2Off, PlayCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, ExternalLink, Link2Off, PlayCircle, Radio } from "lucide-react";
 import { pingChatwoot } from "@/services/chatwootService";
 import { pingDify } from "@/services/difyService";
 import { useIntegrationsStore } from "@/stores/integrationsStore";
 import { useDemoStore } from "@/lib/demo-mode";
+import { useDemoLiveStore } from "@/lib/demo-live";
 import { ensureActiveSession, isJwtExpiredError, refreshSessionForRetry } from "@/lib/client-session";
 import {
   getMetaAppConfig,
