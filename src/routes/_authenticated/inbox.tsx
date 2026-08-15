@@ -404,6 +404,7 @@ function InboxPage() {
         {selected ? (
           <ChatArea
             conversation={selected}
+            typing={demoMode && liveTyping && selected.id === liveConversation?.id}
             onBack={() => setSelected(null)}
             onOpenContext={() => setContextOpen(true)}
             onSend={(text, atts) => handleSend(selected.id, text, atts)}
@@ -417,7 +418,11 @@ function InboxPage() {
 
       {selected && (
         <aside className="hidden lg:flex w-[24%] max-w-sm flex-col border-l border-border/60 bg-white">
-          <ContextPanel conversation={selected} />
+          <ContextPanel
+            conversation={selected}
+            onMessage={(m) => appendMessage(selected.id, m)}
+            onAutomation={(e) => appendAutomation(selected.id, e)}
+          />
         </aside>
       )}
 
@@ -426,7 +431,13 @@ function InboxPage() {
           <SheetHeader className="border-b border-border/60 p-4">
             <SheetTitle className="text-sm font-medium">Contexto do Cliente</SheetTitle>
           </SheetHeader>
-          {selected && <ContextPanel conversation={selected} />}
+          {selected && (
+            <ContextPanel
+              conversation={selected}
+              onMessage={(m) => appendMessage(selected.id, m)}
+              onAutomation={(e) => appendAutomation(selected.id, e)}
+            />
+          )}
         </SheetContent>
       </Sheet>
       </div>
