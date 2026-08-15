@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { CheckCircle2, AlertCircle, Loader2, ExternalLink, Link2Off, PlayCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, ExternalLink, Link2Off, PlayCircle, Radio } from "lucide-react";
 import { pingChatwoot } from "@/services/chatwootService";
 import { pingDify } from "@/services/difyService";
 import { useIntegrationsStore } from "@/stores/integrationsStore";
 import { useDemoStore } from "@/lib/demo-mode";
+import { useDemoLiveStore } from "@/lib/demo-live";
 import { ensureActiveSession, isJwtExpiredError, refreshSessionForRetry } from "@/lib/client-session";
 import {
   getMetaAppConfig,
@@ -35,9 +36,11 @@ function DemoModeCard() {
         <div>
           <h2 className="text-sm font-medium text-slate-900">Modo demonstração</h2>
           <p className="text-xs text-slate-600">
-            Simula o app com tudo conectado: hóspedes conversando na Inbox, métricas no
-            dashboard e base de conhecimento indexada. Nenhum dado é gravado e nenhuma
-            integração real é chamada enquanto estiver ligado.
+            Simula a operação de uma loja de perfumes com tudo conectado: clientes
+            conversando na Inbox, IA resolvendo com base na política, logística reversa
+            funcional (protocolo, etiqueta, rastreio e reembolso), métricas no dashboard e
+            base de conhecimento indexada. Nenhum dado é gravado e nenhuma integração real
+            é chamada enquanto estiver ligado.
           </p>
         </div>
         <span className={`shrink-0 text-xs ${enabled ? "text-indigo-700" : "text-slate-400"}`}>
@@ -55,6 +58,21 @@ function DemoModeCard() {
         >
           <PlayCircle className="mr-2 h-4 w-4" />
           Iniciar simulação de 8 conversas
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => {
+            setEnabled(true);
+            useDemoLiveStore.getState().start();
+            toast.success("Atendimento ao vivo iniciado", {
+              description: "Cliente com frasco vazando — a IA vai resolver e abrir a reversa.",
+            });
+            navigate({ to: "/inbox" });
+          }}
+        >
+          <Radio className="mr-2 h-4 w-4" />
+          Simular atendimento ao vivo
         </Button>
         <Button
           type="button"

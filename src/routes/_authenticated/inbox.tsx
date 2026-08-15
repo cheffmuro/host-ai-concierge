@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot, Search, Send, Paperclip, Sparkles, ArrowLeft, Info, Loader2,
   Check, CloudOff, AlertCircle, X, FileText, ImageIcon, RotateCw,
-  CornerDownRight, Truck, Clock, AlertTriangle, PackageCheck, PackageX, RefreshCcw, Undo2,
+  CornerDownRight, Truck, Clock, AlertTriangle, PackageCheck, PackageX,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow, format } from "date-fns";
@@ -12,6 +12,8 @@ import { useInboxStore } from "@/stores/inboxStore";
 import { mockConversations } from "@/mocks/data";
 import { USE_MOCKS } from "@/lib/mocks";
 import { useDemoMode } from "@/lib/demo-mode";
+import { useDemoLiveStore } from "@/lib/demo-live";
+import { ReverseActions } from "@/components/reverse-actions";
 import { demoConversations } from "@/mocks/demo-scenario";
 import type {
   Attachment, AutomationEvent, AutomationStatus, AutomationType,
@@ -83,6 +85,10 @@ function InboxPage() {
   const { selectedId, setSelected, search, setSearch, channelFilter, setChannelFilter, contextOpen, setContextOpen } = useInboxStore();
   const [conversations, setConversations] = useState<Conversation[]>(USE_MOCKS ? mockConversations : []);
   const demoMode = useDemoMode();
+  const liveConversation = useDemoLiveStore((s) => s.conversation);
+  const liveTyping = useDemoLiveStore((s) => s.typing);
+  const liveRunning = useDemoLiveStore((s) => s.running);
+  const startLive = useDemoLiveStore((s) => s.start);
   const [loadingConversations, setLoadingConversations] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const rawSelected = conversations.find((c) => c.id === selectedId) ?? null;
@@ -139,6 +145,15 @@ function InboxPage() {
     const timer = setInterval(fetchOnce, 60_000);
     return () => { cancelled = true; clearInterval(timer); };
   }, [integrationsVersion, integrationsLoaded, demoMode]);
+
+  // Atendimento ao vivo simulado: injeta/atualiza a conversa no topo da fila.
+  useEffect(() => {
+    if (!demoMode || !liveConversation) return;
+    setConversations((prev) => [liveConversation, ...prev.filter((c) => c.id !== liveConversation.id)]);
+    if (liveConversation.messages.length <= 1) setSelected(liveConversation.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveConversation, demoMode]);
+
 
   useEffect(() => {
     if (!selectedId && conversations.length > 0 && typeof window !== "undefined" && window.innerWidth >= 1024) {
@@ -332,6 +347,18 @@ function InboxPage() {
               </button>
             ))}
           </div>
+          {demoMode && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={liveRunning}
+              onClick={() => startLive()}
+              className="h-8 w-full rounded-sm text-xs gap-1.5"
+            >
+              {liveRunning ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} /> : <Sparkles className="h-3 w-3" strokeWidth={1.5} />}
+              {liveRunning ? "Atendimento em andamento…" : "Simular atendimento ao vivo"}
+            </Button>
+          )}
         </div>
         <ScrollArea className="flex-1">
           <ul className="divide-y divide-border/60">
@@ -389,6 +416,7 @@ function InboxPage() {
         {selected ? (
           <ChatArea
             conversation={selected}
+            typing={demoMode && liveTyping && selected.id === liveConversation?.id}
             onBack={() => setSelected(null)}
             onOpenContext={() => setContextOpen(true)}
             onSend={(text, atts) => handleSend(selected.id, text, atts)}
@@ -402,7 +430,11 @@ function InboxPage() {
 
       {selected && (
         <aside className="hidden lg:flex w-[24%] max-w-sm flex-col border-l border-border/60 bg-white">
-          <ContextPanel conversation={selected} />
+          <ContextPanel
+            conversation={selected}
+            onMessage={(m) => appendMessage(selected.id, m)}
+            onAutomation={(e) => appendAutomation(selected.id, e)}
+          />
         </aside>
       )}
 
@@ -411,7 +443,13 @@ function InboxPage() {
           <SheetHeader className="border-b border-border/60 p-4">
             <SheetTitle className="text-sm font-medium">Contexto do Cliente</SheetTitle>
           </SheetHeader>
-          {selected && <ContextPanel conversation={selected} />}
+          {selected && (
+            <ContextPanel
+              conversation={selected}
+              onMessage={(m) => appendMessage(selected.id, m)}
+              onAutomation={(e) => appendAutomation(selected.id, e)}
+            />
+          )}
         </SheetContent>
       </Sheet>
       </div>
@@ -420,9 +458,10 @@ function InboxPage() {
 }
 
 function ChatArea({
-  conversation, onBack, onOpenContext, onSend, onRetry, onAssume,
+  conversation, typing, onBack, onOpenContext, onSend, onRetry, onAssume,
 }: {
   conversation: Conversation;
+  typing?: boolean;
   onBack: () => void;
   onOpenContext: () => void;
   onSend: (text: string, attachments?: Attachment[]) => void | Promise<void>;
@@ -433,6 +472,11 @@ function ChatArea({
   const [pending, setPending] = useState<Attachment[]>([]);
   const [assuming, setAssuming] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [conversation.messages.length, typing]);
 
   // Cleanup object URLs on unmount / when attachments removed
   useEffect(() => {
@@ -542,8 +586,23 @@ function ChatArea({
           {conversation.messages.map((m) => (
             <MessageBubble key={m.id} message={m} onRetry={onRetry} />
           ))}
+          {typing && (
+            <div className="flex justify-end">
+              <div className="flex items-center gap-1.5 rounded-sm border border-slate-200 bg-slate-100 px-3 py-2.5">
+                <Bot className="h-3 w-3 text-slate-500" strokeWidth={1.5} />
+                <span className="flex gap-1">
+                  {[0, 150, 300].map((d) => (
+                    <span key={d} className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: `${d}ms` }} />
+                  ))}
+                </span>
+                <span className="text-[10px] text-slate-500">Concierge IA digitando…</span>
+              </div>
+            </div>
+          )}
+          <div ref={endRef} />
         </div>
       </ScrollArea>
+
 
       <div className="border-t border-border/60 bg-white p-3">
         <div className="mx-auto max-w-3xl space-y-2">
@@ -699,7 +758,13 @@ const automationStatusLabel: Record<AutomationStatus, string> = {
   pending: "Pendente",
 };
 
-function ContextPanel({ conversation }: { conversation: Conversation }) {
+function ContextPanel({
+  conversation, onMessage, onAutomation,
+}: {
+  conversation: Conversation;
+  onMessage?: (msg: Message) => void;
+  onAutomation?: (evt: AutomationEvent) => void;
+}) {
   const ctx = conversation.context;
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
   return (
@@ -758,22 +823,7 @@ function ContextPanel({ conversation }: { conversation: Conversation }) {
           </ul>
         </div>
 
-        <div className="space-y-2 border-t border-border/60 pt-4">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Ações rápidas · SAC</p>
-          <Button
-            className="w-full justify-start gap-2 rounded-sm"
-            onClick={() => toast.success("Solicitação registrada", { description: "Etiqueta de logística reversa em processamento." })}
-          >
-            <Undo2 className="h-4 w-4" strokeWidth={1.5} /> Gerar etiqueta de reversa
-          </Button>
-          <Button
-            variant="secondary"
-            className="w-full justify-start gap-2 rounded-sm"
-            onClick={() => toast.success("Solicitação registrada", { description: "Fluxo de reembolso iniciado." })}
-          >
-            <RefreshCcw className="h-4 w-4" strokeWidth={1.5} /> Solicitar reembolso
-          </Button>
-        </div>
+        <ReverseActions conversation={conversation} onMessage={onMessage} onAutomation={onAutomation} />
 
         {ctx.aiReasoning && (
           <div className="rounded-sm border border-slate-200 bg-slate-50 p-3">
