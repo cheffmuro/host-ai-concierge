@@ -85,6 +85,10 @@ function InboxPage() {
   const { selectedId, setSelected, search, setSearch, channelFilter, setChannelFilter, contextOpen, setContextOpen } = useInboxStore();
   const [conversations, setConversations] = useState<Conversation[]>(USE_MOCKS ? mockConversations : []);
   const demoMode = useDemoMode();
+  const liveConversation = useDemoLiveStore((s) => s.conversation);
+  const liveTyping = useDemoLiveStore((s) => s.typing);
+  const liveRunning = useDemoLiveStore((s) => s.running);
+  const startLive = useDemoLiveStore((s) => s.start);
   const [loadingConversations, setLoadingConversations] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const rawSelected = conversations.find((c) => c.id === selectedId) ?? null;
