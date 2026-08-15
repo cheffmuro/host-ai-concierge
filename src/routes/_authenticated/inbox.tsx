@@ -784,22 +784,7 @@ function ContextPanel({ conversation }: { conversation: Conversation }) {
           </ul>
         </div>
 
-        <div className="space-y-2 border-t border-border/60 pt-4">
-          <p className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Ações rápidas · SAC</p>
-          <Button
-            className="w-full justify-start gap-2 rounded-sm"
-            onClick={() => toast.success("Solicitação registrada", { description: "Etiqueta de logística reversa em processamento." })}
-          >
-            <Undo2 className="h-4 w-4" strokeWidth={1.5} /> Gerar etiqueta de reversa
-          </Button>
-          <Button
-            variant="secondary"
-            className="w-full justify-start gap-2 rounded-sm"
-            onClick={() => toast.success("Solicitação registrada", { description: "Fluxo de reembolso iniciado." })}
-          >
-            <RefreshCcw className="h-4 w-4" strokeWidth={1.5} /> Solicitar reembolso
-          </Button>
-        </div>
+        <ReverseActions conversation={conversation} onMessage={onMessage} onAutomation={onAutomation} />
 
         {ctx.aiReasoning && (
           <div className="rounded-sm border border-slate-200 bg-slate-50 p-3">
