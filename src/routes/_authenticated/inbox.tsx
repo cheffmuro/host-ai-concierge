@@ -12,6 +12,8 @@ import { useInboxStore } from "@/stores/inboxStore";
 import { mockConversations } from "@/mocks/data";
 import { USE_MOCKS } from "@/lib/mocks";
 import { useDemoMode } from "@/lib/demo-mode";
+import { useDemoLiveStore } from "@/lib/demo-live";
+import { ReverseActions } from "@/components/reverse-actions";
 import { demoConversations } from "@/mocks/demo-scenario";
 import type {
   Attachment, AutomationEvent, AutomationStatus, AutomationType,
