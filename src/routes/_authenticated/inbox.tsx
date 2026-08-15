@@ -446,9 +446,10 @@ function InboxPage() {
 }
 
 function ChatArea({
-  conversation, onBack, onOpenContext, onSend, onRetry, onAssume,
+  conversation, typing, onBack, onOpenContext, onSend, onRetry, onAssume,
 }: {
   conversation: Conversation;
+  typing?: boolean;
   onBack: () => void;
   onOpenContext: () => void;
   onSend: (text: string, attachments?: Attachment[]) => void | Promise<void>;
