@@ -347,7 +347,9 @@ function InboxPage() {
               </button>
             ))}
           </div>
+          <ReverseNotifications onSelectConversation={(id) => setSelected(id)} />
           {demoMode && (
+
             <Button
               size="sm"
               variant="outline"
