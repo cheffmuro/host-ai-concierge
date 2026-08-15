@@ -150,7 +150,7 @@ function InboxPage() {
   useEffect(() => {
     if (!demoMode || !liveConversation) return;
     setConversations((prev) => [liveConversation, ...prev.filter((c) => c.id !== liveConversation.id)]);
-    setSelected(liveConversation.id);
+    if (liveConversation.messages.length <= 1) setSelected(liveConversation.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liveConversation, demoMode]);
 
