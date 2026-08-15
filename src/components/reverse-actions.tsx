@@ -1,10 +1,11 @@
 /**
  * Ações funcionais de logística reversa dentro do Inbox:
- * geração de etiqueta (RMA) e reembolso, com estado real no store.
+ * solicitação de etiqueta (RMA) e reembolso, ambas sujeitas à aprovação
+ * de um supervisor antes de serem efetivadas.
  */
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Undo2, RefreshCcw, Truck, Copy, CheckCircle2 } from "lucide-react";
+import { Undo2, RefreshCcw, Truck, Copy, CheckCircle2, ShieldCheck, X, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   useReverseStore, reverseReasonLabel, reverseStatusLabel, reverseStatusOrder,
-  refundMethodLabel, pickupMethodLabel, newRefundProtocol,
+  refundMethodLabel, pickupMethodLabel, approvalKindLabel,
   type ReverseCase, type ReverseReason, type RefundMethod, type PickupMethod,
 } from "@/lib/reverse-logistics";
 import type { AutomationEvent, Conversation, Message } from "@/services/types";
@@ -34,7 +35,7 @@ export function ReverseActions({
 }: { conversation: Conversation } & ReverseHandlers) {
   const cases = useReverseStore((s) => s.cases);
   const createCase = useReverseStore((s) => s.createCase);
-  const registerRefund = useReverseStore((s) => s.registerRefund);
+  const requestRefund = useReverseStore((s) => s.requestRefund);
 
   const convCases = useMemo(
     () => cases.filter((c) => c.conversationId === conversation.id),
@@ -63,7 +64,7 @@ export function ReverseActions({
       toast.error("Informe o produto da reversa");
       return;
     }
-    const created = createCase({
+    const { reverseCase: created } = createCase({
       conversationId: conversation.id,
       customerName: conversation.customerName,
       customerIdentifier: conversation.customerIdentifier,
@@ -81,24 +82,21 @@ export function ReverseActions({
     onAutomation?.({
       id: uid(),
       type: "reverse_logistics",
-      title: "Etiqueta de reversa emitida",
+      title: "Etiqueta aguardando aprovação do supervisor",
       description: `${reverseReasonLabel[reason]} · ${pickupMethodLabel[pickup]} (${created.courier}).`,
-      status: "success",
+      status: "pending",
       timestamp: new Date().toISOString(),
-      payload: { protocol: created.protocol, tracking: created.tracking },
+      payload: { protocol: created.protocol },
     });
     onMessage?.({
       id: uid(),
       author: "agent",
-      content:
-        pickup === "coleta"
-          ? `Abri o protocolo ${created.protocol} para o ${created.item}. A coleta ${created.courier} passa no seu endereço no próximo dia útil, das 9h às 18h — não precisa imprimir nada. Rastreio: ${created.tracking}.`
-          : `Abri o protocolo ${created.protocol} para o ${created.item}. Enviei a etiqueta pré-paga: é só levar o volume em qualquer agência dos ${created.courier}. Rastreio: ${created.tracking}.`,
+      content: `Abri o protocolo ${created.protocol} para o ${created.item}. A emissão da etiqueta está em aprovação com a supervisão e você recebe o rastreio assim que for liberada — normalmente em poucos minutos.`,
       timestamp: new Date().toISOString(),
       status: "delivered",
     });
-    toast.success(`Reversa ${created.protocol} criada`, {
-      description: `${created.courier} · rastreio ${created.tracking}`,
+    toast.warning(`Reversa ${created.protocol} aguardando supervisor`, {
+      description: "Aprove no cartão do caso para emitir a etiqueta final.",
     });
   };
 
@@ -108,31 +106,33 @@ export function ReverseActions({
       toast.error("Informe o valor do reembolso");
       return;
     }
-    const protocol = newRefundProtocol();
-    const partial = activeCase ? value < activeCase.amount : false;
-    if (activeCase) registerRefund(activeCase.id, { protocol, amount: value, method: refundMethod, partial });
+    if (!activeCase) {
+      toast.error("Abra uma reversa antes de solicitar o reembolso");
+      return;
+    }
+    const partial = value < activeCase.amount;
+    requestRefund({ caseId: activeCase.id, amount: value, method: refundMethod, partial });
     setRefundOpen(false);
 
     onAutomation?.({
       id: uid(),
       type: "reverse_logistics",
-      title: partial ? "Reembolso parcial aprovado" : "Reembolso aprovado",
+      title: `Reembolso ${partial ? "parcial" : "total"} aguardando aprovação`,
       description: `${brl(value)} via ${refundMethodLabel[refundMethod]}.`,
-      status: "success",
+      status: "pending",
       timestamp: new Date().toISOString(),
-      payload: { protocol, amount: value, method: refundMethod },
+      payload: { amount: value, method: refundMethod, partial },
     });
     onMessage?.({
       id: uid(),
       author: "agent",
-      content:
-        refundMethod === "credito"
-          ? `Reembolso aprovado: ${brl(value)} em crédito na loja (+10% de bônus), já disponível na sua conta. Protocolo ${protocol}.`
-          : `Reembolso de ${brl(value)} aprovado via ${refundMethodLabel[refundMethod].toLowerCase()}. Protocolo ${protocol} — o valor cai em até 7 dias úteis.`,
+      content: `Registrei o pedido de reembolso de ${brl(value)} via ${refundMethodLabel[refundMethod].toLowerCase()}. Está em aprovação com a supervisão e confirmo aqui assim que for liberado.`,
       timestamp: new Date().toISOString(),
       status: "delivered",
     });
-    toast.success(`Reembolso ${protocol} registrado`, { description: brl(value) });
+    toast.warning(`Reembolso de ${brl(value)} em aprovação`, {
+      description: "Um supervisor precisa liberar antes do processamento.",
+    });
   };
 
   return (
@@ -149,7 +149,7 @@ export function ReverseActions({
           <DialogHeader>
             <DialogTitle className="text-base">Nova logística reversa</DialogTitle>
             <DialogDescription>
-              Gera protocolo RMA, etiqueta pré-paga e código de rastreio para {conversation.customerName}.
+              Abre o protocolo RMA para {conversation.customerName}. A etiqueta final só é emitida após aprovação do supervisor.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -211,7 +211,7 @@ export function ReverseActions({
           <DialogFooter>
             <Button variant="ghost" className="rounded-sm" onClick={() => setLabelOpen(false)}>Cancelar</Button>
             <Button className="rounded-sm gap-2" onClick={submitLabel}>
-              <Truck className="h-4 w-4" strokeWidth={1.5} /> Emitir etiqueta
+              <Truck className="h-4 w-4" strokeWidth={1.5} /> Enviar para aprovação
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -228,14 +228,17 @@ export function ReverseActions({
             <DialogTitle className="text-base">Reembolso</DialogTitle>
             <DialogDescription>
               {activeCase
-                ? `Vinculado ao protocolo ${activeCase.protocol} · ${activeCase.item}`
-                : "Sem reversa vinculada — o reembolso será registrado como avulso."}
+                ? `Vinculado ao protocolo ${activeCase.protocol} · ${activeCase.item} — total ou parcial, o valor só é processado após aprovação do supervisor.`
+                : "Abra uma reversa nesta conversa antes de solicitar o reembolso."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Valor (R$)</Label>
               <Input value={refundAmount} onChange={(e) => setRefundAmount(e.target.value)} inputMode="decimal" className="rounded-sm" />
+              {activeCase && Number(refundAmount) > 0 && Number(refundAmount) < activeCase.amount && (
+                <p className="text-[11px] text-amber-600">Reembolso parcial ({brl(Number(refundAmount))} de {brl(activeCase.amount)}).</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Forma</Label>
@@ -251,8 +254,8 @@ export function ReverseActions({
           </div>
           <DialogFooter>
             <Button variant="ghost" className="rounded-sm" onClick={() => setRefundOpen(false)}>Cancelar</Button>
-            <Button className="rounded-sm gap-2" onClick={submitRefund}>
-              <CheckCircle2 className="h-4 w-4" strokeWidth={1.5} /> Aprovar reembolso
+            <Button className="rounded-sm gap-2" onClick={submitRefund} disabled={!activeCase}>
+              <ShieldCheck className="h-4 w-4" strokeWidth={1.5} /> Enviar para aprovação
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -261,7 +264,7 @@ export function ReverseActions({
       {convCases.length > 0 && (
         <div className="space-y-3 pt-2">
           {convCases.map((c) => (
-            <ReverseCaseCard key={c.id} item={c} />
+            <ReverseCaseCard key={c.id} item={c} onMessage={onMessage} />
           ))}
         </div>
       )}
@@ -269,9 +272,47 @@ export function ReverseActions({
   );
 }
 
-export function ReverseCaseCard({ item }: { item: ReverseCase }) {
+export function ReverseCaseCard({ item, onMessage }: { item: ReverseCase; onMessage?: (msg: Message) => void }) {
   const advance = useReverseStore((s) => s.advance);
+  const approvals = useReverseStore((s) => s.approvals);
+  const approve = useReverseStore((s) => s.approve);
+  const reject = useReverseStore((s) => s.reject);
   const currentIdx = reverseStatusOrder.indexOf(item.status);
+
+  const pending = approvals.find((a) => a.caseId === item.id && a.status === "pending");
+
+  const handleApprove = () => {
+    if (!pending) return;
+    approve(pending.id);
+    if (pending.kind === "label") {
+      onMessage?.({
+        id: uid(),
+        author: "agent",
+        content:
+          item.pickup === "coleta"
+            ? `Etiqueta aprovada! A coleta ${item.courier} passa no seu endereço no próximo dia útil, das 9h às 18h. Rastreio: ${item.tracking}.`
+            : `Etiqueta aprovada e enviada: é só levar o volume em qualquer agência dos ${item.courier}. Rastreio: ${item.tracking}.`,
+        timestamp: new Date().toISOString(),
+        status: "delivered",
+      });
+      toast.success(`Etiqueta ${item.protocol} aprovada`, { description: `${item.courier} · ${item.tracking}` });
+    } else {
+      onMessage?.({
+        id: uid(),
+        author: "agent",
+        content: `Reembolso ${pending.partial ? "parcial " : ""}de ${brl(pending.amount ?? 0)} aprovado via ${refundMethodLabel[pending.method ?? "cartao"].toLowerCase()}. O valor cai em até 7 dias úteis.`,
+        timestamp: new Date().toISOString(),
+        status: "delivered",
+      });
+      toast.success("Reembolso aprovado", { description: brl(pending.amount ?? 0) });
+    }
+  };
+
+  const handleReject = () => {
+    if (!pending) return;
+    reject(pending.id, "Recusado pelo supervisor — revisar evidências.");
+    toast.error(`${approvalKindLabel[pending.kind]} recusada`, { description: item.protocol });
+  };
 
   return (
     <div className="rounded-sm border border-border/60 bg-slate-50 p-3">
@@ -280,22 +321,65 @@ export function ReverseCaseCard({ item }: { item: ReverseCase }) {
           <p className="text-xs font-medium text-slate-900">{item.protocol}</p>
           <p className="truncate text-[11px] text-slate-500">{item.item} · {reverseReasonLabel[item.reason]}</p>
         </div>
-        <Badge variant="outline" className="shrink-0 rounded-sm border-sky-200 bg-sky-50 text-[10px] font-normal text-sky-700">
+        <Badge
+          variant="outline"
+          className={`shrink-0 rounded-sm text-[10px] font-normal ${
+            item.status === "pending_approval"
+              ? "border-amber-200 bg-amber-50 text-amber-700"
+              : "border-sky-200 bg-sky-50 text-sky-700"
+          }`}
+        >
           {reverseStatusLabel[item.status]}
         </Badge>
       </div>
 
-      <button
-        type="button"
-        onClick={() => {
-          navigator.clipboard?.writeText(item.tracking);
-          toast.success("Rastreio copiado", { description: item.tracking });
-        }}
-        className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-slate-900"
-      >
-        <Truck className="h-3 w-3" strokeWidth={1.5} /> {item.courier} · {item.tracking}
-        <Copy className="h-3 w-3" strokeWidth={1.5} />
-      </button>
+      {item.slaState !== "on_track" && item.status !== "refunded" && (
+        <p
+          className={`mt-2 inline-flex items-center gap-1.5 rounded-sm px-2 py-1 text-[11px] ${
+            item.slaState === "breached" ? "bg-rose-50 text-rose-700" : "bg-amber-50 text-amber-700"
+          }`}
+        >
+          <Clock className="h-3 w-3" strokeWidth={1.5} />
+          {item.slaState === "breached" ? "SLA estourado" : "SLA em risco"}
+        </p>
+      )}
+
+      {pending && (
+        <div className="mt-2 rounded-sm border border-amber-200 bg-amber-50/60 p-2">
+          <p className="text-[11px] font-medium text-amber-800">
+            {approvalKindLabel[pending.kind]} — aprovação pendente
+          </p>
+          <p className="mt-0.5 text-[11px] text-amber-700">
+            {pending.kind === "refund"
+              ? `${pending.partial ? "Parcial" : "Total"} · ${brl(pending.amount ?? 0)} · ${refundMethodLabel[pending.method ?? "cartao"]}`
+              : `${item.courier} · ${pickupMethodLabel[item.pickup]}`}
+            {" · solicitado por "}
+            {pending.requestedBy}
+          </p>
+          <div className="mt-2 flex gap-2">
+            <Button size="sm" className="h-7 flex-1 rounded-sm text-[11px] gap-1" onClick={handleApprove}>
+              <CheckCircle2 className="h-3 w-3" strokeWidth={1.5} /> Aprovar
+            </Button>
+            <Button size="sm" variant="outline" className="h-7 flex-1 rounded-sm text-[11px] gap-1" onClick={handleReject}>
+              <X className="h-3 w-3" strokeWidth={1.5} /> Recusar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {item.labelIssued && (
+        <button
+          type="button"
+          onClick={() => {
+            navigator.clipboard?.writeText(item.tracking);
+            toast.success("Rastreio copiado", { description: item.tracking });
+          }}
+          className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-slate-600 hover:text-slate-900"
+        >
+          <Truck className="h-3 w-3" strokeWidth={1.5} /> {item.courier} · {item.tracking}
+          <Copy className="h-3 w-3" strokeWidth={1.5} />
+        </button>
+      )}
 
       <ol className="mt-3 space-y-1">
         {reverseStatusOrder.map((s, i) => (
@@ -312,7 +396,7 @@ export function ReverseCaseCard({ item }: { item: ReverseCase }) {
         </p>
       )}
 
-      {item.status !== "refunded" && (
+      {item.labelIssued && item.status !== "refunded" && (
         <Button variant="outline" size="sm" className="mt-2 h-7 w-full rounded-sm text-[11px]" onClick={() => advance(item.id)}>
           Avançar status
         </Button>
