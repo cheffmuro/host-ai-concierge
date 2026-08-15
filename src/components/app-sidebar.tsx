@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Inbox, BrainCircuit, Plug, LogOut, Settings, User, BookOpen, Users, Palette } from "lucide-react";
+import { LayoutDashboard, Inbox, BrainCircuit, Plug, LogOut, Settings, User, BookOpen, Users, Palette, Undo2 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
