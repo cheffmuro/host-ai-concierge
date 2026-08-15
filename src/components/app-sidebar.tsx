@@ -20,6 +20,7 @@ import { useBranding } from "@/hooks/useBranding";
 const items = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Inbox", url: "/inbox", icon: Inbox },
+  { title: "Reversas", url: "/reversas", icon: Undo2 },
   { title: "Canais", url: "/channels", icon: Plug },
   { title: "Brain", url: "/brain", icon: BrainCircuit },
   { title: "Integrações", url: "/settings/integrations", icon: Settings },
