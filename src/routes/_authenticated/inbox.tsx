@@ -569,8 +569,23 @@ function ChatArea({
           {conversation.messages.map((m) => (
             <MessageBubble key={m.id} message={m} onRetry={onRetry} />
           ))}
+          {typing && (
+            <div className="flex justify-end">
+              <div className="flex items-center gap-1.5 rounded-sm border border-slate-200 bg-slate-100 px-3 py-2.5">
+                <Bot className="h-3 w-3 text-slate-500" strokeWidth={1.5} />
+                <span className="flex gap-1">
+                  {[0, 150, 300].map((d) => (
+                    <span key={d} className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: `${d}ms` }} />
+                  ))}
+                </span>
+                <span className="text-[10px] text-slate-500">Concierge IA digitando…</span>
+              </div>
+            </div>
+          )}
+          <div ref={endRef} />
         </div>
       </ScrollArea>
+
 
       <div className="border-t border-border/60 bg-white p-3">
         <div className="mx-auto max-w-3xl space-y-2">
