@@ -38,12 +38,14 @@ function ReversasPage() {
         </p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-5">
         <Stat label="Casos" value={String(m.total)} />
         <Stat label="Em aberto" value={String(m.open)} />
+        <Stat label="Aguardando supervisor" value={String(m.pendingApproval)} />
         <Stat label="Reembolsado" value={brl(m.refundValue)} />
         <Stat label="Principal motivo" value={m.topReason} />
       </div>
+
 
       {cases.length === 0 ? (
         <Card className="rounded-sm border-border/60 shadow-none">
