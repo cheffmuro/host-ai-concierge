@@ -35,9 +35,11 @@ function DemoModeCard() {
         <div>
           <h2 className="text-sm font-medium text-slate-900">Modo demonstração</h2>
           <p className="text-xs text-slate-600">
-            Simula o app com tudo conectado: hóspedes conversando na Inbox, métricas no
-            dashboard e base de conhecimento indexada. Nenhum dado é gravado e nenhuma
-            integração real é chamada enquanto estiver ligado.
+            Simula a operação de uma loja de perfumes com tudo conectado: clientes
+            conversando na Inbox, IA resolvendo com base na política, logística reversa
+            funcional (protocolo, etiqueta, rastreio e reembolso), métricas no dashboard e
+            base de conhecimento indexada. Nenhum dado é gravado e nenhuma integração real
+            é chamada enquanto estiver ligado.
           </p>
         </div>
         <span className={`shrink-0 text-xs ${enabled ? "text-indigo-700" : "text-slate-400"}`}>
