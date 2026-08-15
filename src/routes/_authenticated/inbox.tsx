@@ -725,7 +725,13 @@ const automationStatusLabel: Record<AutomationStatus, string> = {
   pending: "Pendente",
 };
 
-function ContextPanel({ conversation }: { conversation: Conversation }) {
+function ContextPanel({
+  conversation, onMessage, onAutomation,
+}: {
+  conversation: Conversation;
+  onMessage?: (msg: Message) => void;
+  onAutomation?: (evt: AutomationEvent) => void;
+}) {
   const ctx = conversation.context;
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
   return (
