@@ -60,6 +60,21 @@ function DemoModeCard() {
         </Button>
         <Button
           type="button"
+          variant="secondary"
+          onClick={() => {
+            setEnabled(true);
+            useDemoLiveStore.getState().start();
+            toast.success("Atendimento ao vivo iniciado", {
+              description: "Cliente com frasco vazando — a IA vai resolver e abrir a reversa.",
+            });
+            navigate({ to: "/inbox" });
+          }}
+        >
+          <Radio className="mr-2 h-4 w-4" />
+          Simular atendimento ao vivo
+        </Button>
+        <Button
+          type="button"
           variant="outline"
           disabled={!enabled}
           onClick={() => {
