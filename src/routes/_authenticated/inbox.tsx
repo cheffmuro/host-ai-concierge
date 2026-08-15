@@ -347,6 +347,18 @@ function InboxPage() {
               </button>
             ))}
           </div>
+          {demoMode && (
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={liveRunning}
+              onClick={() => startLive()}
+              className="h-8 w-full rounded-sm text-xs gap-1.5"
+            >
+              {liveRunning ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1.5} /> : <Sparkles className="h-3 w-3" strokeWidth={1.5} />}
+              {liveRunning ? "Atendimento em andamento…" : "Simular atendimento ao vivo"}
+            </Button>
+          )}
         </div>
         <ScrollArea className="flex-1">
           <ul className="divide-y divide-border/60">
